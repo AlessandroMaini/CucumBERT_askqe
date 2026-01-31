@@ -83,10 +83,11 @@ class QuestionGenerator:
         is_mini = "-mini" in input_path.stem
         
         # Generate output path in the same directory as input
+        # Include prompt variant in filename
         if is_mini:
-            output_filename = "questions-mini.jsonl"
+            output_filename = f"questions-{prompt_variant}-mini.jsonl"
         else:
-            output_filename = "questions.jsonl"
+            output_filename = f"questions-{prompt_variant}.jsonl"
         
         output_path = input_path.parent / output_filename
         

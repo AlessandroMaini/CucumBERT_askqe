@@ -3,6 +3,7 @@ import os
 import argparse
 import sys
 import shutil
+from pathlib import Path
 
 def load_questions_map(qg_file):
     """
@@ -36,8 +37,12 @@ def merge_questions(target_file, output_file, questions_map):
         print(f"Error: Target file '{target_file}' not found.")
         sys.exit(1)
 
+    # Ensure output directory exists
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
     # Use a temp file to allow safe overwriting of the input file
-    temp_output = output_file + ".tmp"
+    temp_output = str(output_path) + ".tmp"
     
     print(f"Processing: {target_file} -> {output_file}")
     
@@ -90,11 +95,34 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Get workspace root (2 levels up from this script in backtranslation/)
+    script_dir = Path(__file__).resolve().parent
+    workspace_root = script_dir.parent
+    
+    # Convert relative paths to absolute paths
+    qg_file_path = Path(args.qg_file)
+    if not qg_file_path.is_absolute():
+        qg_file_path = workspace_root / qg_file_path
+    
+    target_file_path = Path(args.target_file)
+    if not target_file_path.is_absolute():
+        target_file_path = workspace_root / target_file_path
+    
     # Default to overwriting the target file if no output is specified
-    output_path = args.output_file if args.output_file else args.target_file
+    if args.output_file:
+        output_file_path = Path(args.output_file)
+        if not output_file_path.is_absolute():
+            output_file_path = workspace_root / output_file_path
+    else:
+        output_file_path = target_file_path
+    
+    print(f"QG file: {qg_file_path}")
+    print(f"Target file: {target_file_path}")
+    print(f"Output file: {output_file_path}")
+    print("-" * 40)
 
     # 1. Load the Map
-    q_map = load_questions_map(args.qg_file)
+    q_map = load_questions_map(str(qg_file_path))
 
     # 2. Merge
-    merge_questions(args.target_file, output_path, q_map)
+    merge_questions(str(target_file_path), str(output_file_path), q_map)
