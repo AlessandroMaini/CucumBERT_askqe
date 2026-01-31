@@ -3,23 +3,16 @@ import os
 import torch
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from prompt import prompts 
+from prompt import atomic_fact_prompt 
 
-class PerturbationEngine:
+class AtomicFactsExtractor:
     def __init__(self, model_id="Qwen/Qwen3-4B-Instruct-2507"):
         """
         Initializes the model and tokenizer once.
         """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.language_map = {
-            "es": "Spanish",
-            "fr": "French",
-            "hi": "Hindi",
-            "tl": "Tagalog",
-            "zh": "Chinese"
-        }
+        print(f"Loading Atomic Facts model: {model_id} on {self.device}...")
         
-        print(f"Loading model: {model_id} on {self.device}...")
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir="")
         self.model = AutoModelForCausalLM.from_pretrained(
             model_id,
@@ -63,16 +56,16 @@ class PerturbationEngine:
         response = outputs[0][input_ids.shape[-1]:]
         return self.tokenizer.decode(response, skip_special_tokens=True)
 
-    def perturb_dataset(self, input_file, language, perturbation_type):
+    def extract_facts(self, input_file, model_name="qwen3-4b"):
         """
-        Performs a specific perturbation over a specified dataset.
-        Output is saved to contratico/en-{language}[-mini]/{perturbation_type}.jsonl
+        Reads the input file, extracts atomic facts, and saves to the output file.
+        Output is saved to QG/{model_name}/atomic_facts[-mini].jsonl
         """
-        print(f"Starting perturbation: {perturbation_type} for language: {language}")
+        print(f"Starting Atomic Fact Extraction.")
         
-        # Get the workspace root (1 level up from this script in contratico/)
+        # Get the workspace root (2 levels up from this script in QG/fact-extraction/)
         script_dir = Path(__file__).resolve().parent
-        workspace_root = script_dir.parent
+        workspace_root = script_dir.parent.parent
         
         # Convert input_file to absolute path if it's relative
         input_path = Path(input_file)
@@ -83,51 +76,42 @@ class PerturbationEngine:
         is_mini = "-mini" in input_path.stem
         
         # Generate output path
+        output_dir = workspace_root / "QG" / model_name
         if is_mini:
-            output_dir = script_dir / f"en-{language}-mini"
+            output_filename = "atomic_facts-mini.jsonl"
         else:
-            output_dir = script_dir / f"en-{language}"
+            output_filename = "atomic_facts.jsonl"
         
-        output_path = output_dir / f"{perturbation_type}.jsonl"
+        output_path = output_dir / output_filename
         
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        print(f"Output will be saved to: {output_path}")
-        
-        target_lang = self.language_map.get(language, language)
-        prompt_key = f"{perturbation_type}_{language}"
-
-        # Check if the specific prompt exists
-        if prompt_key not in prompts:
-            print(f"Warning: Prompt key '{prompt_key}' not found. Skipping.")
-            return
+        print(f"Input: {input_path}")
+        print(f"Output: {output_path}")
 
         with open(input_path, "r", encoding="utf-8") as f_in, open(output_path, "w", encoding="utf-8") as f_out:
             for line in f_in:
                 data = json.loads(line)
                 
-                # Check if the source language exists in the record
-                if language in data:
-                    sentence = data[language]
+                if "en" in data:
+                    sentence = data["en"]
                     
-                    # Format prompt
-                    prompt_template = prompts[prompt_key]
-                    prompt = prompt_template.replace("{{original}}", sentence).replace("{{target_lang}}", target_lang)
+                    # Construct prompt
+                    prompt = atomic_fact_prompt.replace("{{sentence}}", sentence)
                     
-                    print(f"Prompt: {prompt[:100]}...") # Print first 100 chars for verification
+                    print(f"Processing: {sentence[:50]}...")
                     
                     # Generate response
-                    response = self._call_model(prompt)
-                    clean_response = response.strip('"\n ')
+                    raw_response = self._call_model(prompt)
                     
-                    print(f"> {clean_response[:100]}...")
+                    # Clean response
+                    clean_response = raw_response.strip('"\n \'')
+
+                    print(f"> Facts: {clean_response[:50]}...")
                     print("=" * 40)
 
-                    # Update data record
-                    data["perturbation"] = perturbation_type
-                    data[f"pert_{language}"] = clean_response
-                    
-                    # Write to output
+                    # Save data
+                    data["atomic_facts"] = clean_response
                     f_out.write(json.dumps(data, ensure_ascii=False) + "\n")
                     f_out.flush() # Ensure data is written incrementally

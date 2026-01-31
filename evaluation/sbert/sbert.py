@@ -3,6 +3,7 @@ import nltk
 import argparse
 import csv
 import torch
+from pathlib import Path
 from transformers import AutoTokenizer, AutoModel
 import torch.nn.functional as F
 
@@ -15,13 +16,26 @@ def mean_pooling(model_output, attention_mask):
 
 nltk.download("punkt")
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str)
-parser.add_argument("--output_file", type=str)
+parser = argparse.ArgumentParser(description="Evaluate QA results using SBERT similarity")
+parser.add_argument("--model", type=str, required=True, help="Model name (e.g., 'qwen3-4b')")
+parser.add_argument("--output_file", type=str, required=True, help="Path to output CSV file")
 args = parser.parse_args()
 
+# Get the workspace root (2 levels up from this script in evaluation/sbert/)
+script_dir = Path(__file__).resolve().parent
+workspace_root = script_dir.parent.parent
 
-languages = ["es", "fr", "hi", "tl", "zh"]
+# Language configurations: (language_code, is_mini)
+language_configs = [
+    ("es", False),
+    ("es", True),   # mini version
+    ("fr", False),
+    ("fr", True),   # mini version
+    ("hi", False),
+    ("tl", False),
+    ("zh", False)
+]
+
 pipelines = ["vanilla", "semantic", "atomic"]
 perturbations = ["synonym", "word_order", "spelling", "expansion_noimpact",
                  "intensifier", "expansion_impact", "omission", "alteration"]
@@ -31,19 +45,36 @@ tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v
 model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
 
 
-with open(args.output_file, mode="w", newline="", encoding="utf-8") as csvfile:
-    csv_writer = csv.writer(csvfile)
-    csv_writer.writerow(["language", "perturbation", "pipeline", "cosine_similarity", "num_comparison"])
+# Resolve output file path
+output_path = Path(args.output_file)
+if not output_path.is_absolute():
+    output_path = workspace_root / args.output_file
 
-    for language in languages:
+# Ensure output directory exists
+output_path.parent.mkdir(parents=True, exist_ok=True)
+
+with open(output_path, mode="w", newline="", encoding="utf-8") as csvfile:
+    csv_writer = csv.writer(csvfile)
+    csv_writer.writerow(["language", "is_mini", "perturbation", "pipeline", "cosine_similarity", "num_comparison"])
+
+    for language, is_mini in language_configs:
         for pipeline in pipelines:
             for perturbation in perturbations:
-                print("Language: ", language)
-                print("Pipeline: ", pipeline)
-                print("Perturbation: ", perturbation)
+                lang_label = f"{language}{'-mini' if is_mini else ''}"
+                print(f"Language: {lang_label}")
+                print(f"Pipeline: {pipeline}")
+                print(f"Perturbation: {perturbation}")
 
-                predicted_file = f"../../QA/{args.model}/{language}-{pipeline}-{perturbation}.jsonl"
-                reference_file = f"../../QA/{args.model}/en-{pipeline}.jsonl"
+                # Build file paths
+                if is_mini:
+                    predicted_filename = f"{language}-{pipeline}-{perturbation}-mini.jsonl"
+                    reference_filename = f"en-{pipeline}-mini.jsonl"
+                else:
+                    predicted_filename = f"{language}-{pipeline}-{perturbation}.jsonl"
+                    reference_filename = f"en-{pipeline}.jsonl"
+                
+                predicted_file = workspace_root / "QA" / args.model / predicted_filename
+                reference_file = workspace_root / "QA" / args.model / reference_filename
 
                 total_cosine_similarity = 0
                 num_comparisons = 0
@@ -114,9 +145,9 @@ with open(args.output_file, mode="w", newline="", encoding="utf-8") as csvfile:
                     print(f"Cosine Similarity: {avg_cosine_similarity:.3f}")
                     print("=" * 80)
 
-                    with open(args.output_file, mode="a", newline="", encoding="utf-8") as csvfile:
+                    with open(output_path, mode="a", newline="", encoding="utf-8") as csvfile:
                         csv_writer = csv.writer(csvfile)
-                        csv_writer.writerow([language, perturbation, pipeline, avg_cosine_similarity, num_comparisons])
+                        csv_writer.writerow([language, is_mini, perturbation, pipeline, avg_cosine_similarity, num_comparisons])
 
                 else:
                     print("No valid comparisons found in the JSONL files.")

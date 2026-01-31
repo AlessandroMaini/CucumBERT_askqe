@@ -1,20 +1,51 @@
 import json
 import nltk
+import argparse
+from pathlib import Path
 from utils import compare_answers
 
 nltk.download("punkt")
 
+parser = argparse.ArgumentParser(description="Evaluate QA results using string comparison metrics")
+parser.add_argument("--model", type=str, required=True, help="Model name (e.g., 'llama-70b', 'qwen3-4b')")
+args = parser.parse_args()
 
-languages = ["es", "fr", "hi", "tl", "zh"]
+# Get the workspace root (2 levels up from this script in evaluation/string-comparison/)
+script_dir = Path(__file__).resolve().parent
+workspace_root = script_dir.parent.parent
+
+
+# Language configurations: (language_code, is_mini)
+language_configs = [
+    ("es", False),
+    ("es", True),   # mini version
+    ("fr", False),
+    ("fr", True),   # mini version
+    ("hi", False),
+    ("tl", False),
+    ("zh", False)
+]
+
 pipelines = ["vanilla", "semantic", "atomic"]
 perturbations = ["alteration", "expansion_impact", "expansion_noimpact", "intensifier", "omission", "spelling", "synonym", "word_order"]
 
 
-for language in languages:
+for language, is_mini in language_configs:
     for pipeline in pipelines:
         for perturbation in perturbations:
-            predicted_file = f"../../QA/llama-70b/{language}-{pipeline}-{perturbation}.jsonl"
-            reference_file = f"../../QA/llama-70b/en-{pipeline}.jsonl"
+            lang_label = f"{language}{'-mini' if is_mini else ''}"
+            print(f"Processing: {lang_label} | {pipeline} | {perturbation}")
+            
+            # Build file paths
+            if is_mini:
+                predicted_filename = f"{language}-{pipeline}-{perturbation}-mini.jsonl"
+                reference_filename = f"en-{pipeline}-mini.jsonl"
+            else:
+                predicted_filename = f"{language}-{pipeline}-{perturbation}.jsonl"
+                reference_filename = f"en-{pipeline}.jsonl"
+            
+            predicted_file = workspace_root / "QA" / args.model / predicted_filename
+            reference_file = workspace_root / "QA" / args.model / reference_filename
 
             results_list = []
             try:
@@ -69,7 +100,18 @@ for language in languages:
             except FileNotFoundError as e:
                 print(f"File not found: {e}")
 
-            jsonl_output_file = f"en-{language}/{perturbation}.jsonl"
-            with open(jsonl_output_file, "w", encoding="utf-8") as jsonl_file:
+            # Build output path
+            if is_mini:
+                output_dir = script_dir / f"en-{language}-mini"
+            else:
+                output_dir = script_dir / f"en-{language}"
+            
+            output_path = output_dir / f"{perturbation}.jsonl"
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(output_path, "w", encoding="utf-8") as jsonl_file:
                 for row in results_list:
                     jsonl_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+            
+            print(f"Saved results to: {output_path}")
+            print("-" * 80)
