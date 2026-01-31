@@ -77,6 +77,12 @@ for language, is_mini in language_configs:
 
                             row_scores = []
                             for pred, ref in zip(predicted_answers, reference_answers):
+                                # Ensure both pred and ref are strings
+                                if not isinstance(pred, str) or not isinstance(ref, str):
+                                    continue
+                                if pred.strip() == "" or ref.strip() == "":
+                                    continue
+                                    
                                 f1, EM, chrf, bleu = compare_answers(pred, ref)
                                 row_scores.append({
                                     "f1": f1,
@@ -84,6 +90,10 @@ for language, is_mini in language_configs:
                                     "chrf": chrf,
                                     "bleu": bleu
                                 })
+
+                            # Only save if we have valid scores
+                            if not row_scores:
+                                continue
 
                             # Save per-row result
                             row_data = {
