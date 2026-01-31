@@ -99,19 +99,25 @@ for language, is_mini in language_configs:
 
             except FileNotFoundError as e:
                 print(f"File not found: {e}")
+                continue
 
-            # Build output path
-            if is_mini:
-                output_dir = script_dir / f"en-{language}-mini"
+            # Only create output file if we have valid results
+            if results_list:
+                # Build output path
+                if is_mini:
+                    output_dir = script_dir / f"en-{language}-mini"
+                else:
+                    output_dir = script_dir / f"en-{language}"
+                
+                output_path = output_dir / f"{perturbation}.jsonl"
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(output_path, "w", encoding="utf-8") as jsonl_file:
+                    for row in results_list:
+                        jsonl_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+                
+                print(f"Saved results to: {output_path}")
             else:
-                output_dir = script_dir / f"en-{language}"
+                print("No valid results found.")
             
-            output_path = output_dir / f"{perturbation}.jsonl"
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(output_path, "w", encoding="utf-8") as jsonl_file:
-                for row in results_list:
-                    jsonl_file.write(json.dumps(row, ensure_ascii=False) + "\n")
-            
-            print(f"Saved results to: {output_path}")
             print("-" * 80)

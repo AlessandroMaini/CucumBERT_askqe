@@ -83,7 +83,7 @@ class QuestionAnswerer:
             return
         
         # Determine if input is mini dataset
-        is_mini = "-mini" in input_path.parent.name
+        is_mini = "-mini" in input_path.parent.name or "-mini" in input_path.stem
         
         # Parse input path to determine language and perturbation
         input_str = str(input_path)
