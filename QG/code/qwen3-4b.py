@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from prompt import prompts 
+from qg_prompt import prompts 
 
 class QuestionGenerator:
     def __init__(self, model_id="Qwen/Qwen3-4B-Instruct-2507"):

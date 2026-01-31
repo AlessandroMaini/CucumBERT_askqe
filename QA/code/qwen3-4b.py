@@ -4,7 +4,7 @@ import os
 import re
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from prompt import qa_prompt
+from qa_prompt import qa_prompt
 
 class QuestionAnswerer:
     def __init__(self, model_id="Qwen/Qwen3-4B-Instruct-2507"):

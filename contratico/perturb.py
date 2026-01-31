@@ -3,7 +3,7 @@ import os
 import torch
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from prompt import prompts 
+from perturb_prompt import prompts 
 
 class PerturbationEngine:
     def __init__(self, model_id="Qwen/Qwen3-4B-Instruct-2507"):

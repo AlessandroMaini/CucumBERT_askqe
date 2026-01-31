@@ -3,7 +3,7 @@ import os
 import torch
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from prompt import atomic_fact_prompt 
+from fact_prompt import atomic_fact_prompt 
 
 class AtomicFactsExtractor:
     def __init__(self, model_id="Qwen/Qwen3-4B-Instruct-2507"):
