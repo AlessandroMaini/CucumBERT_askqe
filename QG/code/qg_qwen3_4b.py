@@ -43,7 +43,7 @@ class QuestionGenerator:
             tokenize=True,
             add_generation_prompt=True,
             return_tensors="pt",
-        ).to(self.device)
+        ).to(self.model.device)
 
         with torch.no_grad():
             outputs = self.model.generate(
