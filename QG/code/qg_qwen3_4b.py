@@ -63,11 +63,11 @@ class QuestionGenerator:
             
         return decoded
 
-    def generate_questions(self, input_file, prompt_variant):
+    def generate_questions(self, input_file, prompt_variant, model_name="qwen3-4b"):
         """
         Main function to process the dataset and generate questions.
         Expected input: QG/entailed_facts.jsonl or QG/entailed_facts-mini.jsonl
-        Output is saved in the same directory as input with name questions-{prompt_variant}[-mini].jsonl
+        Output is saved to QG/{model_name}/questions-{prompt_variant}[-mini].jsonl
         """
         print(f"Starting QG ({prompt_variant}).")
         
@@ -83,14 +83,15 @@ class QuestionGenerator:
         # Determine if input is mini dataset
         is_mini = "-mini" in input_path.stem
         
-        # Generate output path in the same directory as input
-        # Include prompt variant in filename
+        # Generate output path
+        output_dir = workspace_root / "QG" / model_name
+        
         if is_mini:
             output_filename = f"questions-{prompt_variant}-mini.jsonl"
         else:
             output_filename = f"questions-{prompt_variant}.jsonl"
         
-        output_path = input_path.parent / output_filename
+        output_path = output_dir / output_filename
         
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
