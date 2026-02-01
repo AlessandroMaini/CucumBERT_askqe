@@ -66,7 +66,8 @@ class QuestionGenerator:
     def generate_questions(self, input_file, prompt_variant):
         """
         Main function to process the dataset and generate questions.
-        Output is saved in the same directory as input with name questions[-mini].jsonl
+        Expected input: QG/entailed_facts.jsonl or QG/entailed_facts-mini.jsonl
+        Output is saved in the same directory as input with name questions-{prompt_variant}[-mini].jsonl
         """
         print(f"Starting QG ({prompt_variant}).")
         

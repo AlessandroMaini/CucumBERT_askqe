@@ -30,10 +30,10 @@ def call_groq_model(client, prompt, model_id):
         print(f"Error calling Groq API: {e}")
         return ""
 
-def extract_facts(input_file, model_name, groq_model_id, api_key):
+def extract_facts(input_file, groq_model_id, api_key):
     """
     Reads the input file, extracts atomic facts using Groq, and saves to the output file.
-    Output is saved to QG/{model_name}/atomic_facts[-mini].jsonl
+    Output is saved to QG/atomic_facts[-mini].jsonl
     """
     print(f"Starting Atomic Fact Extraction using {groq_model_id}...")
     
@@ -53,8 +53,7 @@ def extract_facts(input_file, model_name, groq_model_id, api_key):
     is_mini = "-mini" in input_path.stem
     
     # Generate output path
-    # Note: model_name is used for the folder structure, groq_model_id is used for the API
-    output_dir = workspace_root / "QG" / model_name
+    output_dir = workspace_root / "QG"
     
     if is_mini:
         output_filename = "atomic_facts-mini.jsonl"
@@ -106,12 +105,6 @@ if __name__ == "__main__":
         help="Path to the input .jsonl file (e.g., 'data/input.jsonl')"
     )
     parser.add_argument(
-        "--model_name", 
-        type=str, 
-        default="llama-70b", 
-        help="Name used for the output folder structure (e.g., 'llama-70b')"
-    )
-    parser.add_argument(
         "--groq_model_id", 
         type=str, 
         default="llama-3.3-70b-versatile", 
@@ -132,7 +125,6 @@ if __name__ == "__main__":
 
     extract_facts(
         input_file=args.input_file, 
-        model_name=args.model_name,
         groq_model_id=args.groq_model_id,
         api_key=args.api_key
     )
