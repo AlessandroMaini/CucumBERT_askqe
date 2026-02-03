@@ -15,7 +15,7 @@ FILE_IDS = "DGT.en-es.ids"
 FILE_README = "README"
 
 # Output settings
-OUTPUT_JSON = "../processed/en-es-new.json"
+OUTPUT_JSON = "../processed/en-es-new.jsonl"
 MAX_SAMPLES = 1000  
 
 # --- FILTER SETTINGS ---
@@ -128,9 +128,10 @@ def convert_to_json(en_path, es_path, output_path, limit):
                 if counter >= limit:
                     break
         
-        # Write to JSON file
+        # Write to JSONL file
         with open(output_path, "w", encoding="utf-8") as json_file:
-            json.dump(data_list, json_file, ensure_ascii=False, indent=4)
+            for record in data_list:
+                json_file.write(json.dumps(record, ensure_ascii=False) + "\n")
         
         print(f"Success! Created {output_path} with {len(data_list)} entries.")
         
