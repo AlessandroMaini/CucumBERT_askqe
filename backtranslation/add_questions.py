@@ -31,7 +31,7 @@ def load_questions_map(qg_file):
 
 def merge_questions(target_file, output_file, questions_map):
     """
-    Reads target_file, adds questions from the map, and writes to output_file.
+    Reads target_file, adds/replaces questions from the map, and writes to output_file.
     """
     if not os.path.exists(target_file):
         print(f"Error: Target file '{target_file}' not found.")
@@ -46,8 +46,7 @@ def merge_questions(target_file, output_file, questions_map):
     
     print(f"Processing: {target_file} -> {output_file}")
     
-    matched_count = 0
-    missing_count = 0
+    updated_count = 0
 
     try:
         with open(target_file, 'r', encoding='utf-8') as f_in, \
@@ -61,23 +60,16 @@ def merge_questions(target_file, output_file, questions_map):
 
                 record_id = record.get('id')
 
-                # Logic to add questions
+                # Replace questions if ID found in map
                 if record_id and record_id in questions_map:
                     record['questions'] = questions_map[record_id]
-                    matched_count += 1
-                else:
-                    record['questions'] = []
-                    # Only warn if ID exists but wasn't found in map
-                    if record_id:
-                        missing_count += 1
-                        # Optional: Uncomment to see specific missing IDs
-                        # print(f"Warning: ID '{record_id}' not found in QG map.")
+                    updated_count += 1
 
                 f_out.write(json.dumps(record, ensure_ascii=False) + '\n')
     
         # Move temp file to final destination
         shutil.move(temp_output, output_file)
-        print(f"Success! Matched: {matched_count}, Missing: {missing_count}")
+        print(f"Success! Updated {updated_count} records with questions.")
         print("-" * 40)
 
     except Exception as e:
