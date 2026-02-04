@@ -101,10 +101,24 @@ class QuestionAnswerer:
             language = "en"
             perturbation = None
         
+        # Extract check_type if pipeline_type is "anscheck"
+        check_type = None
+        if pipeline_type == "anscheck":
+            # Pattern: questions-anscheck-{check_type}[-mini].jsonl
+            check_match = re.search(r'questions-anscheck-([a-z_-]+?)(?:-mini)?\.jsonl', input_path.name)
+            if check_match:
+                check_type = check_match.group(1)
+        
         # Build output filename
-        output_parts = [language, pipeline_type]
-        if perturbation:
-            output_parts.append(perturbation)
+        output_parts = [language]
+        if pipeline_type == "anscheck" and check_type:
+            output_parts.extend(["anscheck", check_type])
+            if perturbation:
+                output_parts.append(perturbation)
+        else:
+            output_parts.append(pipeline_type)
+            if perturbation:
+                output_parts.append(perturbation)
         
         output_filename = "-".join(output_parts)
         if is_mini:

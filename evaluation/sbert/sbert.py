@@ -36,9 +36,10 @@ language_configs = [
     ("zh", False)
 ]
 
-pipelines = ["vanilla", "semantic", "atomic"]
+pipelines = ["vanilla", "semantic", "atomic", "anscheck"]
 perturbations = ["synonym", "word_order", "spelling", "expansion_noimpact",
                  "intensifier", "expansion_impact", "omission", "alteration"]
+check_variants = ["longformer", "electra", "electra-null"]
 
 
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
@@ -56,24 +57,38 @@ output_path.parent.mkdir(parents=True, exist_ok=True)
 # Write CSV header
 with open(output_path, mode="w", newline="", encoding="utf-8") as csvfile:
     csv_writer = csv.writer(csvfile)
-    csv_writer.writerow(["language", "is_mini", "perturbation", "pipeline", "cosine_similarity", "num_comparison"])
+    csv_writer.writerow(["language", "is_mini", "perturbation", "pipeline", "check_variant", "cosine_similarity", "num_comparison"])
 
 # Process each configuration
 for language, is_mini in language_configs:
     for pipeline in pipelines:
-        for perturbation in perturbations:
-            lang_label = f"{language}{'-mini' if is_mini else ''}"
-            print(f"Language: {lang_label}")
-            print(f"Pipeline: {pipeline}")
-            print(f"Perturbation: {perturbation}")
+        # Determine which check_variants to iterate (only for anscheck)
+        variants_to_process = check_variants if pipeline == "anscheck" else [None]
+        
+        for check_variant in variants_to_process:
+            for perturbation in perturbations:
+                lang_label = f"{language}{'-mini' if is_mini else ''}"
+                print(f"Language: {lang_label}")
+                print(f"Pipeline: {pipeline}")
+                if check_variant:
+                    print(f"Check Variant: {check_variant}")
+                print(f"Perturbation: {perturbation}")
 
-            # Build file paths
-            if is_mini:
-                predicted_filename = f"{language}-{pipeline}-{perturbation}-mini.jsonl"
-                reference_filename = f"en-{pipeline}-mini.jsonl"
-            else:
-                predicted_filename = f"{language}-{pipeline}-{perturbation}.jsonl"
-                reference_filename = f"en-{pipeline}.jsonl"
+                # Build file paths
+                if pipeline == "anscheck" and check_variant:
+                    if is_mini:
+                        predicted_filename = f"{language}-anscheck-{check_variant}-{perturbation}-mini.jsonl"
+                        reference_filename = f"en-anscheck-{check_variant}-mini.jsonl"
+                    else:
+                        predicted_filename = f"{language}-anscheck-{check_variant}-{perturbation}.jsonl"
+                        reference_filename = f"en-anscheck-{check_variant}.jsonl"
+                else:
+                    if is_mini:
+                        predicted_filename = f"{language}-{pipeline}-{perturbation}-mini.jsonl"
+                        reference_filename = f"en-{pipeline}-mini.jsonl"
+                    else:
+                        predicted_filename = f"{language}-{pipeline}-{perturbation}.jsonl"
+                        reference_filename = f"en-{pipeline}.jsonl"
             
             predicted_file = workspace_root / "QA" / args.model / predicted_filename
             reference_file = workspace_root / "QA" / args.model / reference_filename
@@ -150,7 +165,7 @@ for language, is_mini in language_configs:
                 # Append results to CSV
                 with open(output_path, mode="a", newline="", encoding="utf-8") as csvfile:
                     csv_writer = csv.writer(csvfile)
-                    csv_writer.writerow([language, is_mini, perturbation, pipeline, avg_cosine_similarity, num_comparisons])
+                    csv_writer.writerow([language, is_mini, perturbation, pipeline, check_variant if check_variant else "N/A", avg_cosine_similarity, num_comparisons])
 
             else:
                 print("No valid comparisons found in the JSONL files.")

@@ -26,23 +26,39 @@ language_configs = [
     ("zh", False)
 ]
 
-pipelines = ["vanilla", "semantic", "atomic"]
+pipelines = ["vanilla", "semantic", "atomic", "anscheck"]
 perturbations = ["alteration", "expansion_impact", "expansion_noimpact", "intensifier", "omission", "spelling", "synonym", "word_order"]
+check_variants = ["longformer", "electra", "electra-null"]
 
 
 for language, is_mini in language_configs:
     for pipeline in pipelines:
-        for perturbation in perturbations:
-            lang_label = f"{language}{'-mini' if is_mini else ''}"
-            print(f"Processing: {lang_label} | {pipeline} | {perturbation}")
-            
-            # Build file paths
-            if is_mini:
-                predicted_filename = f"{language}-{pipeline}-{perturbation}-mini.jsonl"
-                reference_filename = f"en-{pipeline}-mini.jsonl"
-            else:
-                predicted_filename = f"{language}-{pipeline}-{perturbation}.jsonl"
-                reference_filename = f"en-{pipeline}.jsonl"
+        # Determine which check_variants to iterate (only for anscheck)
+        variants_to_process = check_variants if pipeline == "anscheck" else [None]
+        
+        for check_variant in variants_to_process:
+            for perturbation in perturbations:
+                lang_label = f"{language}{'-mini' if is_mini else ''}"
+                print(f"Processing: {lang_label} | {pipeline}", end="")
+                if check_variant:
+                    print(f" | {check_variant}", end="")
+                print(f" | {perturbation}")
+                
+                # Build file paths
+                if pipeline == "anscheck" and check_variant:
+                    if is_mini:
+                        predicted_filename = f"{language}-anscheck-{check_variant}-{perturbation}-mini.jsonl"
+                        reference_filename = f"en-anscheck-{check_variant}-mini.jsonl"
+                    else:
+                        predicted_filename = f"{language}-anscheck-{check_variant}-{perturbation}.jsonl"
+                        reference_filename = f"en-anscheck-{check_variant}.jsonl"
+                else:
+                    if is_mini:
+                        predicted_filename = f"{language}-{pipeline}-{perturbation}-mini.jsonl"
+                        reference_filename = f"en-{pipeline}-mini.jsonl"
+                    else:
+                        predicted_filename = f"{language}-{pipeline}-{perturbation}.jsonl"
+                        reference_filename = f"en-{pipeline}.jsonl"
             
             predicted_file = workspace_root / "QA" / args.model / predicted_filename
             reference_file = workspace_root / "QA" / args.model / reference_filename
@@ -114,13 +130,20 @@ for language, is_mini in language_configs:
             # Only create output file if we have valid results
             if results_list:
                 # Build output path
-                if is_mini:
-                    output_dir = script_dir / f"en-{language}-mini"
+                if pipeline == "anscheck" and check_variant:
+                    if is_mini:
+                        output_dir = script_dir / f"en-{language}-mini" / "anscheck"
+                    else:
+                        output_dir = script_dir / f"en-{language}" / "anscheck"
+                    output_path = output_dir / f"{check_variant}-{perturbation}.jsonl"
                 else:
-                    output_dir = script_dir / f"en-{language}"
+                    if is_mini:
+                        output_dir = script_dir / f"en-{language}-mini"
+                    else:
+                        output_dir = script_dir / f"en-{language}"
+                    output_path = output_dir / f"{perturbation}.jsonl"
                 
-                output_path = output_dir / f"{perturbation}.jsonl"
-                output_path.parent.mkdir(parents=True, exist_ok=True)
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
                 
                 with open(output_path, "w", encoding="utf-8") as jsonl_file:
                     for row in results_list:

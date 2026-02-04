@@ -3,7 +3,8 @@ import json
 import os
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from qg_prompt import prompts 
+from qg_prompt import prompts
+from answerability_check import AnswerabilityChecker 
 
 class QuestionGenerator:
     def __init__(self, model_id="Qwen/Qwen3-4B-Instruct-2507"):
@@ -63,13 +64,22 @@ class QuestionGenerator:
             
         return decoded
 
-    def generate_questions(self, input_file, prompt_variant, model_name="qwen3-4b"):
+    def generate_questions(self, input_file, prompt_variant, model_name="qwen3-4b", check_variant=None):
         """
         Main function to process the dataset and generate questions.
         Expected input: QG/entailed_facts.jsonl or QG/entailed_facts-mini.jsonl
         Output is saved to QG/{model_name}/questions-{prompt_variant}[-mini].jsonl
+        
+        Args:
+            check_variant: Optional. When prompt_variant is "anscheck", specifies which
+                          answerability checker to use.
         """
         print(f"Starting QG ({prompt_variant}).")
+        
+        # Initialize answerability checker if needed
+        answerability_checker = None
+        if prompt_variant == "anscheck" and check_variant:
+            answerability_checker = AnswerabilityChecker(check_variant=check_variant)
         
         # Get the workspace root (2 levels up from this script in QG/code/)
         script_dir = Path(__file__).resolve().parent
@@ -86,10 +96,17 @@ class QuestionGenerator:
         # Generate output path
         output_dir = workspace_root / "QG" / model_name
         
-        if is_mini:
-            output_filename = f"questions-{prompt_variant}-mini.jsonl"
+        if prompt_variant == "anscheck" and check_variant:
+            # Special naming for anscheck variant
+            if is_mini:
+                output_filename = f"questions-anscheck-{check_variant}-mini.jsonl"
+            else:
+                output_filename = f"questions-anscheck-{check_variant}.jsonl"
         else:
-            output_filename = f"questions-{prompt_variant}.jsonl"
+            if is_mini:
+                output_filename = f"questions-{prompt_variant}-mini.jsonl"
+            else:
+                output_filename = f"questions-{prompt_variant}.jsonl"
         
         output_path = output_dir / output_filename
         
@@ -144,7 +161,7 @@ class QuestionGenerator:
                             # Fallback if atomic facts missing
                             prompt = prompt_template.replace("{{sentence}}", sentence)
 
-                    else:  # Default/Vanilla case
+                    else:  # Vanilla/AnsCheck case
                         prompt = prompt_template.replace("{{sentence}}", sentence)
 
                     # --- Generation ---
@@ -153,6 +170,15 @@ class QuestionGenerator:
 
                     print(f"Generated: {generated_questions[:60]}...") # Print preview
                     print("-" * 40)
+
+                    # --- Answerability Check (if applicable) ---
+                    if answerability_checker:
+                        print(f"Running answerability check ({check_variant})...")
+                        generated_questions = answerability_checker.check_answerability(
+                            context=sentence,
+                            questions=generated_questions
+                        )
+                        print(f"Check completed.")
 
                     # --- Saving ---
                     data['questions'] = generated_questions
