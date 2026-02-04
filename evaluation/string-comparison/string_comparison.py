@@ -143,7 +143,7 @@ for language, is_mini in language_configs:
                             output_dir = script_dir / f"en-{language}"
                         output_path = output_dir / f"{perturbation}.jsonl"
                     
-                        output_path.parent.mkdir(parents=True, exist_ok=True)
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
                     
                     with open(output_path, "w", encoding="utf-8") as jsonl_file:
                         for row in results_list:
