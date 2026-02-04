@@ -174,11 +174,19 @@ class QuestionGenerator:
                     # --- Answerability Check (if applicable) ---
                     if answerability_checker:
                         print(f"Running answerability check ({check_variant})...")
-                        generated_questions = answerability_checker.check_answerability(
-                            context=sentence,
-                            questions=generated_questions
-                        )
-                        print(f"Check completed.")
+                        # Parse string to list for answerability checking
+                        try:
+                            questions_list = json.loads(generated_questions)
+                            if isinstance(questions_list, list):
+                                generated_questions = answerability_checker.check_answerability(
+                                    context=sentence,
+                                    questions=questions_list
+                                )
+                                print(f"Check completed. Kept {len(generated_questions)}/{len(questions_list)} questions.")
+                            else:
+                                print(f"Warning: Generated questions not in list format. Skipping answerability check.")
+                        except json.JSONDecodeError:
+                            print(f"Warning: Could not parse generated questions as JSON. Skipping answerability check.")
 
                     # --- Saving ---
                     data['questions'] = generated_questions
