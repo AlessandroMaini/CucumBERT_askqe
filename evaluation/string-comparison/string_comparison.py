@@ -130,17 +130,16 @@ for language, is_mini in language_configs:
                 # Only create output file if we have valid results
                 if results_list:
                     # Build output path
+                    if is_mini:
+                        base_dir = script_dir / f"en-{language}-mini"
+                    else:
+                        base_dir = script_dir / f"en-{language}"
+                    
                     if pipeline == "anscheck" and check_variant:
-                        if is_mini:
-                            output_dir = script_dir / f"en-{language}-mini" / "anscheck"
-                        else:
-                            output_dir = script_dir / f"en-{language}" / "anscheck"
+                        output_dir = base_dir / "anscheck"
                         output_path = output_dir / f"{check_variant}-{perturbation}.jsonl"
                     else:
-                        if is_mini:
-                            output_dir = script_dir / f"en-{language}-mini"
-                        else:
-                            output_dir = script_dir / f"en-{language}"
+                        output_dir = base_dir / pipeline
                         output_path = output_dir / f"{perturbation}.jsonl"
                     
                     output_path.parent.mkdir(parents=True, exist_ok=True)
