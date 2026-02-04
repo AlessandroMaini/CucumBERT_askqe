@@ -178,11 +178,13 @@ class QuestionGenerator:
                         try:
                             questions_list = json.loads(generated_questions)
                             if isinstance(questions_list, list):
-                                generated_questions = answerability_checker.check_answerability(
+                                filtered_questions = answerability_checker.check_answerability(
                                     context=sentence,
                                     questions=questions_list
                                 )
-                                print(f"Check completed. Kept {len(generated_questions)}/{len(questions_list)} questions.")
+                                # Convert back to string format for consistency
+                                generated_questions = json.dumps(filtered_questions, ensure_ascii=False)
+                                print(f"Check completed. Kept {len(filtered_questions)}/{len(questions_list)} questions.")
                             else:
                                 print(f"Warning: Generated questions not in list format. Skipping answerability check.")
                         except json.JSONDecodeError:
