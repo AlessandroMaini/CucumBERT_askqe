@@ -48,7 +48,7 @@ def perturb_dataset(input_file, language, perturbation_type, model_id, api_key):
     # Initialize Groq Client
     client = Groq(api_key=api_key)
     
-    # Get the workspace root (1 level up from this script in contratico/)
+    # Get the workspace root (1 level up from this script in perturbed_DGT/)
     script_dir = Path(__file__).resolve().parent
     workspace_root = script_dir.parent
     

@@ -38,7 +38,7 @@ def run_backtranslation(input_file, source_lang, target_lang):
         sys.exit(1)
     
     # Parse input path to extract language, mini status, and perturbation
-    # Expected: contratico/en-{language}[-mini]/{perturbation}.jsonl
+    # Expected: perturbed_DGT/en-{language}[-mini]/{perturbation}.jsonl
     input_str = str(input_path)
     
     # Extract language from path
@@ -144,7 +144,7 @@ def run_backtranslation(input_file, source_lang, target_lang):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Backtranslate a JSONL dataset using Google Translate.")
     
-    parser.add_argument("input_file", type=str, help="Path to the input .jsonl file (e.g., contratico/en-es/alteration.jsonl)")
+    parser.add_argument("input_file", type=str, help="Path to the input .jsonl file (e.g., perturbed_DGT/en-es/alteration.jsonl)")
     parser.add_argument("--source_lang", type=str, required=True, help="Source language code (e.g., 'es')")
     parser.add_argument("--target_lang", type=str, default="en", help="Target language code (default: 'en')")
 

@@ -15,8 +15,8 @@ FILE_IDS = "DGT.en-es.ids"
 FILE_README = "README"
 
 # Output settings
-OUTPUT_JSON = "../processed/en-es-new.jsonl"
-MAX_SAMPLES = 1000  
+OUTPUT_JSON = "../processed/en-es.jsonl"
+MAX_SAMPLES = 500  
 
 # --- FILTER SETTINGS ---
 MIN_CHARS = 50
