@@ -74,6 +74,22 @@ for language, is_mini in language_configs:
                     print(f"Check Variant: {check_variant}")
                 print(f"Perturbation: {perturbation}")
 
+                # Build dataset name
+                dataset_name = f"en-{language}{'-mini' if is_mini else ''}"
+                
+                # Build output JSONL path to match string-comparison structure
+                # For anscheck: en-es-mini/anscheck/electra-perturbation.jsonl
+                # For others: en-es-mini/vanilla-perturbation.jsonl (to avoid overwriting between pipelines)
+                if pipeline == "anscheck" and check_variant:
+                    output_jsonl_dir = script_dir / dataset_name / "anscheck"
+                    output_jsonl_filename = f"{check_variant}-{perturbation}.jsonl"
+                else:
+                    output_jsonl_dir = script_dir / dataset_name
+                    output_jsonl_filename = f"{pipeline}-{perturbation}.jsonl"
+                
+                output_jsonl_dir.mkdir(parents=True, exist_ok=True)
+                output_jsonl_path = output_jsonl_dir / output_jsonl_filename
+
                 # Build file paths
                 if pipeline == "anscheck" and check_variant:
                     if is_mini:
@@ -97,7 +113,10 @@ for language, is_mini in language_configs:
                 num_comparisons = 0
 
                 try:
-                    with open(predicted_file, "r", encoding="utf-8") as pred_file, open(reference_file, "r", encoding="utf-8") as ref_file:
+                    with open(predicted_file, "r", encoding="utf-8") as pred_file, \
+                         open(reference_file, "r", encoding="utf-8") as ref_file, \
+                         open(output_jsonl_path, "w", encoding="utf-8") as jsonl_out:
+                        
                         for pred_line, ref_line in zip(pred_file, ref_file):
                             try:
                                 pred_data = json.loads(pred_line)
@@ -122,6 +141,10 @@ for language, is_mini in language_configs:
                                     continue
                                 if not predicted_answers or not reference_answers or len(predicted_answers) != len(reference_answers):
                                     continue
+                                
+                                # Store cosine similarities for this record
+                                cosine_similarities = []
+                                
                                 for pred, ref in zip(predicted_answers, reference_answers):
                                     if not isinstance(pred, str) or not isinstance(ref, str):
                                         continue
@@ -142,8 +165,17 @@ for language, is_mini in language_configs:
                                     ref_embeds = F.normalize(ref_embed, p=2, dim=1)
 
                                     cos_sim = F.cosine_similarity(pred_embeds, ref_embeds, dim=1).mean().item()
+                                    cosine_similarities.append(cos_sim)
                                     total_cosine_similarity += cos_sim
                                     num_comparisons += 1
+                                
+                                # Write record with scores to JSONL
+                                if cosine_similarities:
+                                    output_record = pred_data.copy()
+                                    output_record["sbert_scores"] = cosine_similarities
+                                    output_record["sbert_score"] = sum(cosine_similarities) / len(cosine_similarities)
+                                    jsonl_out.write(json.dumps(output_record, ensure_ascii=False) + "\n")
+                                    jsonl_out.flush()
 
                             except json.JSONDecodeError as e:
                                 print(f"Skipping a corrupted line due to JSONDecodeError: {e}")
@@ -160,6 +192,7 @@ for language, is_mini in language_configs:
                     print("Average Scores:")
                     print(f"Num comparisons: {num_comparisons}")
                     print(f"Cosine Similarity: {avg_cosine_similarity:.3f}")
+                    print(f"Detailed results saved to: {output_jsonl_path}")
                     print("=" * 80)
 
                     # Append results to CSV

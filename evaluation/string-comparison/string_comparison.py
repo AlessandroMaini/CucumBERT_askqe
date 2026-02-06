@@ -111,12 +111,19 @@ for language, is_mini in language_configs:
                                 if not row_scores:
                                     continue
 
-                                # Save per-row result
-                                row_data = {
-                                    "id": pred_data.get("id", "unknown"),
-                                    "en": pred_data.get("en", "unknown"),
-                                    "scores": row_scores
-                                }
+                                # Calculate averaged scores
+                                avg_f1 = sum(score["f1"] for score in row_scores) / len(row_scores)
+                                avg_em = sum(score["em"] for score in row_scores) / len(row_scores)
+                                avg_chrf = sum(score["chrf"] for score in row_scores) / len(row_scores)
+                                avg_bleu = sum(score["bleu"] for score in row_scores) / len(row_scores)
+
+                                # Save per-row result with all original data
+                                row_data = pred_data.copy()
+                                row_data["scores"] = row_scores
+                                row_data["avg_f1"] = avg_f1
+                                row_data["avg_em"] = avg_em
+                                row_data["avg_chrf"] = avg_chrf
+                                row_data["avg_bleu"] = avg_bleu
                                 results_list.append(row_data)
 
                             except json.JSONDecodeError as e:
