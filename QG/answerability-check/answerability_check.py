@@ -71,7 +71,7 @@ class AnswerabilityChecker:
         """Calculate answerability score based on the check variant."""
         if self.check_variant == "longformer":
             prob = torch.sigmoid(self.model(**inputs).logits.squeeze(-1))
-            answerability_score = prob.item() * 100
+            answerability_score = prob.item()
 
         elif self.check_variant == "electra":
             with torch.no_grad():
@@ -145,14 +145,14 @@ class AnswerabilityChecker:
         return answerable_questions
 
 
-def process_questions_file(input_file, anscheck_type, threshold=90.0):
+def process_questions_file(input_file, anscheck_type, threshold=0.90):
     """
     Process a questions JSONL file and filter by answerability.
     
     Args:
         input_file: Path to input JSONL file with questions
         anscheck_type: Type of answerability check ("longformer", "electra", "electra-null")
-        threshold: Answerability score threshold (default: 90.0)
+        threshold: Answerability score threshold (default: 0.90)
     """
     # Get the workspace root (2 levels up from this script in QG/code/)
     script_dir = Path(__file__).resolve().parent
@@ -167,8 +167,14 @@ def process_questions_file(input_file, anscheck_type, threshold=90.0):
     if not input_path.exists():
         raise FileNotFoundError(f"Input file not found: {input_path}")
     
-    # Generate output path: QG/{model-name}/questions-anscheck-{anscheck_type}.jsonl
-    output_filename = f"questions-anscheck-{anscheck_type}.jsonl"
+    # Check if input file contains "-mini" suffix
+    is_mini = "-mini" in input_path.stem
+    
+    # Generate output path: QG/{model-name}/questions-anscheck-{anscheck_type}[-mini].jsonl
+    if is_mini:
+        output_filename = f"questions-anscheck-{anscheck_type}-mini.jsonl"
+    else:
+        output_filename = f"questions-anscheck-{anscheck_type}.jsonl"
     output_path = input_path.parent / output_filename
     
     print(f"Input file: {input_path}")
@@ -196,9 +202,21 @@ def process_questions_file(input_file, anscheck_type, threshold=90.0):
                 
                 # Extract context and questions from the record
                 # Assuming the record has fields like "context", "sentence", or similar for context
-                # and "questions" as a list
+                # and "questions" as a list (stored as JSON string)
                 context = data.get("en", "")
-                questions = data.get("questions", [])
+                questions_raw = data.get("questions", "[]")
+                
+                # Parse questions from JSON string format to actual list
+                if isinstance(questions_raw, str):
+                    try:
+                        questions = json.loads(questions_raw)
+                    except json.JSONDecodeError:
+                        print(f"Warning: Could not parse questions on line {line_num}. Skipping.")
+                        continue
+                elif isinstance(questions_raw, list):
+                    questions = questions_raw
+                else:
+                    questions = []
                 
                 if not context:
                     print(f"Warning: No context found in line {line_num}. Skipping.")
@@ -227,7 +245,8 @@ def process_questions_file(input_file, anscheck_type, threshold=90.0):
                 
                 # Only write records that have at least one answerable question
                 if answerable_questions:
-                    data["questions"] = answerable_questions
+                    # Convert the list back to JSON string format to match input format
+                    data["questions"] = json.dumps(answerable_questions, ensure_ascii=False)
                     f_out.write(json.dumps(data, ensure_ascii=False) + "\n")
                     f_out.flush()
                     processed_count += 1
