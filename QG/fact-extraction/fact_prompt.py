@@ -2,10 +2,10 @@ atomic_fact_prompt = """Task: You will be given an English sentence. Your goal i
 
 *** Example Starts ***
 Sentence: It has not yet been determined whether the negligence or willful misconduct of the Supplier caused the data breach reported on Monday.
-Atomic facts: ['It has not yet been determined whether the negligence of the Supplier caused the data breach reported on Monday.', 'It has not yet been determined whether the willful misconduct of the Supplier caused the data breach reported on Monday.']
+Atomic facts: ["It has not yet been determined whether the negligence of the Supplier caused the data breach reported on Monday.", "It has not yet been determined whether the willful misconduct of the Supplier caused the data breach reported on Monday."]
 
 Sentence: The duration and territorial scope of the license granted herein shall be defined exclusively in Annex A of this Agreement.
-Atomic facts: ['The duration of the license granted herein shall be defined exclusively in Annex A of this Agreement.', 'The territorial scope of the license granted herein shall be defined exclusively in Annex A of this Agreement.']
+Atomic facts: ["The duration of the license granted herein shall be defined exclusively in Annex A of this Agreement.", "The territorial scope of the license granted herein shall be defined exclusively in Annex A of this Agreement."]
 *** Example Ends ***
 
 Sentence: {{sentence}}
