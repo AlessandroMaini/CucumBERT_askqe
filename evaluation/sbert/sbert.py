@@ -36,9 +36,10 @@ language_configs = [
     ("zh", False)
 ]
 
-pipelines = ["vanilla", "semantic", "atomic"]
+pipelines = ["vanilla", "semantic", "atomic", "anscheck"]
 perturbations = ["synonym", "word_order", "spelling", "expansion_noimpact",
                  "intensifier", "expansion_impact", "omission", "alteration"]
+check_variants = ["longformer", "electra", "electra-null"]
 
 
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
@@ -56,102 +57,149 @@ output_path.parent.mkdir(parents=True, exist_ok=True)
 # Write CSV header
 with open(output_path, mode="w", newline="", encoding="utf-8") as csvfile:
     csv_writer = csv.writer(csvfile)
-    csv_writer.writerow(["language", "is_mini", "perturbation", "pipeline", "cosine_similarity", "num_comparison"])
+    csv_writer.writerow(["language", "is_mini", "perturbation", "pipeline", "check_variant", "cosine_similarity", "num_comparison"])
 
 # Process each configuration
 for language, is_mini in language_configs:
     for pipeline in pipelines:
-        for perturbation in perturbations:
-            lang_label = f"{language}{'-mini' if is_mini else ''}"
-            print(f"Language: {lang_label}")
-            print(f"Pipeline: {pipeline}")
-            print(f"Perturbation: {perturbation}")
+        # Determine which check_variants to iterate (only for anscheck)
+        variants_to_process = check_variants if pipeline == "anscheck" else [None]
+        
+        for check_variant in variants_to_process:
+            for perturbation in perturbations:
+                lang_label = f"{language}{'-mini' if is_mini else ''}"
+                print(f"Language: {lang_label}")
+                print(f"Pipeline: {pipeline}")
+                if check_variant:
+                    print(f"Check Variant: {check_variant}")
+                print(f"Perturbation: {perturbation}")
 
-            # Build file paths
-            if is_mini:
-                predicted_filename = f"{language}-{pipeline}-{perturbation}-mini.jsonl"
-                reference_filename = f"en-{pipeline}-mini.jsonl"
-            else:
-                predicted_filename = f"{language}-{pipeline}-{perturbation}.jsonl"
-                reference_filename = f"en-{pipeline}.jsonl"
-            
-            predicted_file = workspace_root / "QA" / args.model / predicted_filename
-            reference_file = workspace_root / "QA" / args.model / reference_filename
+                # Build dataset name
+                dataset_name = f"en-{language}{'-mini' if is_mini else ''}"
+                
+                # Build output JSONL path to match string-comparison structure
+                # For anscheck: en-es-mini/anscheck/electra-perturbation.jsonl
+                # For others: en-es-mini/vanilla-perturbation.jsonl (to avoid overwriting between pipelines)
+                if pipeline == "anscheck" and check_variant:
+                    output_jsonl_dir = script_dir / dataset_name / "anscheck"
+                    output_jsonl_filename = f"{check_variant}-{perturbation}.jsonl"
+                else:
+                    output_jsonl_dir = script_dir / dataset_name
+                    output_jsonl_filename = f"{pipeline}-{perturbation}.jsonl"
+                
+                output_jsonl_dir.mkdir(parents=True, exist_ok=True)
+                output_jsonl_path = output_jsonl_dir / output_jsonl_filename
 
-            total_cosine_similarity = 0
-            num_comparisons = 0
+                # Build file paths
+                if pipeline == "anscheck" and check_variant:
+                    if is_mini:
+                        predicted_filename = f"{language}-anscheck-{check_variant}-{perturbation}-mini.jsonl"
+                        reference_filename = f"en-anscheck-{check_variant}-mini.jsonl"
+                    else:
+                        predicted_filename = f"{language}-anscheck-{check_variant}-{perturbation}.jsonl"
+                        reference_filename = f"en-anscheck-{check_variant}.jsonl"
+                else:
+                    if is_mini:
+                        predicted_filename = f"{language}-{pipeline}-{perturbation}-mini.jsonl"
+                        reference_filename = f"en-{pipeline}-mini.jsonl"
+                    else:
+                        predicted_filename = f"{language}-{pipeline}-{perturbation}.jsonl"
+                        reference_filename = f"en-{pipeline}.jsonl"
+                
+                predicted_file = workspace_root / "QA" / args.model / predicted_filename
+                reference_file = workspace_root / "QA" / args.model / reference_filename
 
-            try:
-                with open(predicted_file, "r", encoding="utf-8") as pred_file, open(reference_file, "r", encoding="utf-8") as ref_file:
-                    for pred_line, ref_line in zip(pred_file, ref_file):
-                        try:
-                            pred_data = json.loads(pred_line)
-                            ref_data = json.loads(ref_line)
+                total_cosine_similarity = 0
+                num_comparisons = 0
 
-                            predicted_answers = pred_data.get("answers", [])
-                            reference_answers = ref_data.get("answers", [])
+                try:
+                    with open(predicted_file, "r", encoding="utf-8") as pred_file, \
+                         open(reference_file, "r", encoding="utf-8") as ref_file, \
+                         open(output_jsonl_path, "w", encoding="utf-8") as jsonl_out:
+                        
+                        for pred_line, ref_line in zip(pred_file, ref_file):
+                            try:
+                                pred_data = json.loads(pred_line)
+                                ref_data = json.loads(ref_line)
 
-                            if isinstance(predicted_answers, str):
-                                try:
-                                    predicted_answers = json.loads(predicted_answers)
-                                except json.JSONDecodeError:
+                                predicted_answers = pred_data.get("answers", [])
+                                reference_answers = ref_data.get("answers", [])
+
+                                if isinstance(predicted_answers, str):
+                                    try:
+                                        predicted_answers = json.loads(predicted_answers)
+                                    except json.JSONDecodeError:
+                                        continue
+
+                                if isinstance(reference_answers, str):
+                                    try:
+                                        reference_answers = json.loads(reference_answers)
+                                    except json.JSONDecodeError:
+                                        continue
+
+                                if not isinstance(predicted_answers, list) or not isinstance(reference_answers, list):
                                     continue
-
-                            if isinstance(reference_answers, str):
-                                try:
-                                    reference_answers = json.loads(reference_answers)
-                                except json.JSONDecodeError:
+                                if not predicted_answers or not reference_answers or len(predicted_answers) != len(reference_answers):
                                     continue
+                                
+                                # Store cosine similarities for this record
+                                cosine_similarities = []
+                                
+                                for pred, ref in zip(predicted_answers, reference_answers):
+                                    if not isinstance(pred, str) or not isinstance(ref, str):
+                                        continue
+                                    if pred.strip() == "" or ref.strip() == "":
+                                        continue
 
-                            if not isinstance(predicted_answers, list) or not isinstance(reference_answers, list):
+                                    encoded_pred = tokenizer(pred, padding=True, truncation=True, return_tensors='pt')
+                                    encoded_ref = tokenizer(ref, padding=True, truncation=True, return_tensors='pt')
+
+                                    with torch.no_grad():
+                                        pred_output = model(**encoded_pred)
+                                        ref_output = model(**encoded_ref)
+
+                                    pred_embed = mean_pooling(pred_output, encoded_pred['attention_mask'])
+                                    pred_embeds = F.normalize(pred_embed, p=2, dim=1)
+
+                                    ref_embed = mean_pooling(ref_output, encoded_ref['attention_mask'])
+                                    ref_embeds = F.normalize(ref_embed, p=2, dim=1)
+
+                                    cos_sim = F.cosine_similarity(pred_embeds, ref_embeds, dim=1).mean().item()
+                                    cosine_similarities.append(cos_sim)
+                                    total_cosine_similarity += cos_sim
+                                    num_comparisons += 1
+                                
+                                # Write record with scores to JSONL
+                                if cosine_similarities:
+                                    output_record = pred_data.copy()
+                                    output_record["sbert_scores"] = cosine_similarities
+                                    output_record["sbert_score"] = sum(cosine_similarities) / len(cosine_similarities)
+                                    jsonl_out.write(json.dumps(output_record, ensure_ascii=False) + "\n")
+                                    jsonl_out.flush()
+
+                            except json.JSONDecodeError as e:
+                                print(f"Skipping a corrupted line due to JSONDecodeError: {e}")
                                 continue
-                            if not predicted_answers or not reference_answers or len(predicted_answers) != len(reference_answers):
-                                continue
-                            for pred, ref in zip(predicted_answers, reference_answers):
-                                if not isinstance(pred, str) or not isinstance(ref, str):
-                                    continue
-                                if pred.strip() == "" or ref.strip() == "":
-                                    continue
 
-                                encoded_pred = tokenizer(pred, padding=True, truncation=True, return_tensors='pt')
-                                encoded_ref = tokenizer(ref, padding=True, truncation=True, return_tensors='pt')
+                except FileNotFoundError as e:
+                    print(f"File not found: {e}")
+                    continue
 
-                                with torch.no_grad():
-                                    pred_output = model(**encoded_pred)
-                                    ref_output = model(**encoded_ref)
+                if num_comparisons > 0:
+                    avg_cosine_similarity = total_cosine_similarity / num_comparisons
 
-                                pred_embed = mean_pooling(pred_output, encoded_pred['attention_mask'])
-                                pred_embeds = F.normalize(pred_embed, p=2, dim=1)
+                    print("-" * 80)
+                    print("Average Scores:")
+                    print(f"Num comparisons: {num_comparisons}")
+                    print(f"Cosine Similarity: {avg_cosine_similarity:.3f}")
+                    print(f"Detailed results saved to: {output_jsonl_path}")
+                    print("=" * 80)
 
-                                ref_embed = mean_pooling(ref_output, encoded_ref['attention_mask'])
-                                ref_embeds = F.normalize(ref_embed, p=2, dim=1)
+                    # Append results to CSV
+                    with open(output_path, mode="a", newline="", encoding="utf-8") as csvfile:
+                        csv_writer = csv.writer(csvfile)
+                        csv_writer.writerow([language, is_mini, perturbation, pipeline, check_variant if check_variant else "N/A", avg_cosine_similarity, num_comparisons])
 
-                                cos_sim = F.cosine_similarity(pred_embeds, ref_embeds, dim=1).mean().item()
-                                total_cosine_similarity += cos_sim
-                                num_comparisons += 1
-
-                        except json.JSONDecodeError as e:
-                            print(f"Skipping a corrupted line due to JSONDecodeError: {e}")
-                            continue
-
-            except FileNotFoundError as e:
-                print(f"File not found: {e}")
-                continue
-
-            if num_comparisons > 0:
-                avg_cosine_similarity = total_cosine_similarity / num_comparisons
-
-                print("-" * 80)
-                print("Average Scores:")
-                print(f"Num comparisons: {num_comparisons}")
-                print(f"Cosine Similarity: {avg_cosine_similarity:.3f}")
-                print("=" * 80)
-
-                # Append results to CSV
-                with open(output_path, mode="a", newline="", encoding="utf-8") as csvfile:
-                    csv_writer = csv.writer(csvfile)
-                    csv_writer.writerow([language, is_mini, perturbation, pipeline, avg_cosine_similarity, num_comparisons])
-
-            else:
-                print("No valid comparisons found in the JSONL files.")
-                print("-" * 80)
+                else:
+                    print("No valid comparisons found in the JSONL files.")
+                    print("-" * 80)
