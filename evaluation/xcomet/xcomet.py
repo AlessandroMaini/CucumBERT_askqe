@@ -70,15 +70,16 @@ def main():
                 for line in f:
                     try:
                         data = json.loads(line)
-                        src = data.get('en', '')  # Reference is the original English
+                        src = data.get('en', '')  # Source is the original English
                         mt = data.get(f'pert_{language}', '')  # Prediction is the perturbed text
+                        ref = data.get(language, '')  # Reference is the original translation
 
-                        if src and mt:
+                        if src and mt and ref:
                             records_to_process.append(data)
                             comet_input.append({
                                 "src": src,
                                 "mt": mt,
-                                "ref": src  # In MTQE, source is often used as a proxy reference
+                                "ref": ref
                             })
                     except json.JSONDecodeError:
                         continue
