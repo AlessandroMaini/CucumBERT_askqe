@@ -68,13 +68,42 @@ def extract_facts(input_file, groq_model_id, api_key):
     print(f"Input: {input_path}")
     print(f"Output: {output_path}")
 
-    # Process file
-    with open(input_path, "r", encoding="utf-8") as f_in, open(output_path, "w", encoding="utf-8") as f_out:
+    # --- 1. Resume Logic: load already-processed IDs and clean empty entries ---
+    processed_ids = set()
+    if output_path.exists():
+        print("Found existing output file. Resuming...")
+        valid_lines = []
+        with open(output_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    existing = json.loads(line)
+                    # Skip rows with empty atomic_facts
+                    if not existing.get("atomic_facts", "").strip():
+                        print(f"  Removing empty entry: {existing.get('id')}")
+                        continue
+                    processed_ids.add(existing.get("id"))
+                    valid_lines.append(line.strip())
+                except json.JSONDecodeError:
+                    pass
+        # Rewrite file without empty entries
+        with open(output_path, 'w', encoding='utf-8') as f:
+            for vl in valid_lines:
+                f.write(vl + "\n")
+        print(f"  Loaded {len(processed_ids)} already-processed sentences.")
+
+    # --- 2. Processing Loop ---
+    with open(input_path, "r", encoding="utf-8") as f_in, open(output_path, "a", encoding="utf-8") as f_out:
         for line_num, line in enumerate(f_in):
             if not line.strip():
                 continue
 
             data = json.loads(line)
+
+            # Skip if already processed
+            if data.get("id") in processed_ids:
+                continue
             
             if "en" in data:
                 sentence = data["en"]
@@ -88,10 +117,12 @@ def extract_facts(input_file, groq_model_id, api_key):
                 raw_response = call_groq_model(client, prompt, groq_model_id)
                 
                 # Clean response
-                clean_response = raw_response.strip('"\n \'')
+                clean_response = raw_response.strip('"\n \'') 
 
-                # Save data
-                data["atomic_facts"] = clean_response
+                # Skip empty responses
+                if not clean_response.strip():
+                    print(f"  WARNING: Empty response for {data.get('id')}. Skipping.")
+                    continue
                 f_out.write(json.dumps(data, ensure_ascii=False) + "\n")
                 f_out.flush() # Ensure data is written incrementally
 

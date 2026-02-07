@@ -87,7 +87,8 @@ def load_standard_metric_data(metric_name, dataset, workspace_root):
                         if record_id:
                             score = config["field_extractor"](data)
                             if score is not None:
-                                all_data[record_id] = score
+                                composite_key = f"{record_id}_{pert}"
+                                all_data[composite_key] = score
                     except json.JSONDecodeError as e:
                         print(f"Error parsing line in {file_path}: {e}")
                         continue
@@ -133,7 +134,8 @@ def load_askqe_metric_data(metric_name, dataset, pipeline, anscheck_type, worksp
                         if record_id:
                             score = config["field_extractor"](data)
                             if score is not None:
-                                all_data[record_id] = score
+                                composite_key = f"{record_id}_{pert}"
+                                all_data[composite_key] = score
                     except json.JSONDecodeError as e:
                         print(f"Error parsing line in {file_path}: {e}")
                         continue
@@ -290,9 +292,9 @@ def main():
             f.write(f"  Pearson correlation: {correlation:.4f}\n")
             f.write(f"  P-value: {p_value:.4e}\n")
             f.write(f"  Number of samples: {n_samples}\n\n")
-            f.write(f"Common sentence IDs ({len(common_ids)}):\n")
-            for idx, id in enumerate(common_ids, 1):
-                f.write(f"  {idx}. {id} (AskQE: {askqe_data[id]:.4f}, Standard: {standard_data[id]:.4f})\n")
+            f.write(f"Common keys ({len(common_ids)}):\n")
+            for idx, key in enumerate(common_ids, 1):
+                f.write(f"  {idx}. {key} (AskQE: {askqe_data[key]:.4f}, Standard: {standard_data[key]:.4f})\n")
         
         print(f"\nResults saved to: {output_path}")
         

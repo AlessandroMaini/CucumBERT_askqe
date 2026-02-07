@@ -3,3 +3,5 @@ evaluation/check_order.py
 evaluation/__pycache__/check_order.cpython-312.pyc
 evaluation/filter_answers.py
 evaluation/validate_qa_counts.py
+evaluation/pearson-correlation/extract_results.py
+evaluation/pearson-correlation/results/summary.json
