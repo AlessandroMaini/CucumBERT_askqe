@@ -8,8 +8,8 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate MT quality using XCOMET")
-    parser.add_argument("--model", type=str, default="Unbabel/wmt22-comet-da", 
-                        help="COMET model to use (default: Unbabel/wmt22-comet-da)")
+    parser.add_argument("--model", type=str, default="Unbabel/wmt22-cometkiwi-da", 
+                        help="COMET model to use (default: Unbabel/wmt22-cometkiwi-da)")
     parser.add_argument("--batch_size", type=int, default=16,
                         help="Batch size for prediction (default: 16)")
     args = parser.parse_args()
@@ -72,14 +72,12 @@ def main():
                         data = json.loads(line)
                         src = data.get('en', '')  # Source is the original English
                         mt = data.get(f'pert_{language}', '')  # Prediction is the perturbed text
-                        ref = data.get(language, '')  # Reference is the original translation
 
-                        if src and mt and ref:
+                        if src and mt:
                             records_to_process.append(data)
                             comet_input.append({
                                 "src": src,
-                                "mt": mt,
-                                "ref": ref
+                                "mt": mt
                             })
                     except json.JSONDecodeError:
                         continue
