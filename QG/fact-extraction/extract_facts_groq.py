@@ -123,6 +123,9 @@ def extract_facts(input_file, groq_model_id, api_key):
                 if not clean_response.strip():
                     print(f"  WARNING: Empty response for {data.get('id')}. Skipping.")
                     continue
+
+                # Save data
+                data["atomic_facts"] = clean_response
                 f_out.write(json.dumps(data, ensure_ascii=False) + "\n")
                 f_out.flush() # Ensure data is written incrementally
 
