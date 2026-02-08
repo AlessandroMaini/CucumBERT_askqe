@@ -31,7 +31,12 @@ class AnswerabilityChecker:
         self.check_variant = check_variant
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.stop_words = set(stopwords.words('english'))
-        self.nlp = spacy.load("en_core_web_sm")
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+        except:
+            print("Downloading spaCy model...")
+            spacy.cli.download("en_core_web_sm")
+            self.nlp = spacy.load("en_core_web_sm")
         
         # Select model based on variant
         if check_variant == "longformer":
@@ -94,6 +99,26 @@ class AnswerabilityChecker:
             raise ValueError(f"Unknown check_variant: {self.check_variant}")
         return inputs
     
+    def _get_lexical_overlap(self, question, context):
+        """
+        Calculates how many content words in the Question actually exist in the Source.
+        Returns a float (0.0 to 1.0).
+        """
+        q_doc = self.nlp(question.lower())
+        c_doc = self.nlp(context.lower())
+        
+        # Get lemmas of content words (NO PUNCT, NO STOP, NO PRON)
+        q_lemmas = [t.lemma_ for t in q_doc if t.pos_ in ["NOUN", "VERB", "ADJ", "PROPN"] and not t.is_stop]
+        c_lemmas = set([t.lemma_ for t in c_doc if not t.is_stop])
+        
+        if not q_lemmas:
+            return 1.0 # If question has no content words (e.g. "Who is it?"), skip this check.
+            
+        # Count how many match
+        match_count = sum(1 for lemma in q_lemmas if lemma in c_lemmas)
+        
+        return match_count / len(q_lemmas)
+
     def _get_answerability_score(self, inputs):
         """Calculate answerability score based on the check variant."""
         if self.check_variant == "longformer":
@@ -135,110 +160,112 @@ class AnswerabilityChecker:
             answerability_logit = -null_score
             
             # 3. Apply Sigmoid
-            answerability_score = 1 - np.exp(-answerability_logit)
+            answerability_score = 1 - torch.exp(-answerability_logit)
         
         else:
             raise ValueError(f"Unknown check_variant: {self.check_variant}")
         return answerability_score
     
-    def _is_valid_anchor(self, answer, context):
+    def _is_significant_anchor(self, answer_text, context_text):
         """
         STRICT Anchor Check:
-        1. Must be in text.
-        2. Must contain at least one NOUN, PROPN, or VERB (Content Word).
-        3. Must not be a single stopword.
+        The answer must be a GRAMMATICAL ENTITY (Subject, Object, or Named Entity).
         """
-        ans_clean = answer.strip()
-        ctx_clean = context.strip()
+        # Parse the Context to find the answer's role
+        # Note: This is a heuristic. We search for the answer span in the context.
+        doc = self.nlp(context_text)
+        ans_span = None
         
-        # 1. Exact phrase match (Case insensitive)
-        if ans_clean.lower() not in ctx_clean.lower():
-            return False
-            
-        # 2. Length Check (Single letter answers are usually noise)
-        if len(ans_clean) < 3:
-            return False
-
-        # 3. Linguistic Content Check (The "Meat" Test)
-        # We process the answer to see if it has substance.
-        doc = self.nlp(ans_clean)
+        # Find the answer span in the doc
+        # (Simple string search; for perfect precision we'd align tokens, but this is fast)
+        start_idx = context_text.find(answer_text)
+        if start_idx == -1: return False # Should not happen if extraction worked
         
-        has_content = False
+        # Locate the token in the doc that corresponds to this char position
         for token in doc:
-            # Check for Noun, Proper Noun, or Verb
-            if token.pos_ in ["NOUN", "PROPN", "VERB"] and not token.is_stop:
-                has_content = True
+            if token.idx == start_idx:
+                root_token = token
                 break
+        else:
+            # Fallback: analyze the answer string in isolation
+            ans_doc = self.nlp(answer_text)
+            root_token = [t for t in ans_doc if t.dep_ != "det"][-1] # Approximation
+
+        # CONSTRAINT 1: Dependency Role
+        # Valid roles: nsubj (subject), dobj (direct obj), pobj (preposition obj), attr (attribute)
+        # Invalid roles: det (the), amod (adjective), prep (of), advmod (very)
+        valid_deps = ["nsubj", "nsubjpass", "dobj", "pobj", "attr", "ROOT"]
         
-        # If the answer is just "The" (DET) or "Very" (ADV), reject it.
-        if not has_content:
-            return False
+        # CONSTRAINT 2: Named Entities
+        # If it's a Person, Org, GPE, Date -> Always Valid
+        has_entity = False
+        ans_doc = self.nlp(answer_text)
+        if ans_doc.ents:
+            has_entity = True
             
-        return True
-
-    def check_answerability(self, context, questions, threshold=0.95):
-        """
-        Check answerability of questions against a context.
-        Uses Anchor Check to rescue valid tautologies.
+        # THE CHECK:
+        # It must be a Valid Dependency OR contain a Named Entity
+        is_grammatically_valid = (root_token.dep_ in valid_deps) or has_entity
         
-        Args:
-            context: The context/sentence to check questions against
-            questions: List of questions to check
-            threshold: Answerability score threshold (default: 0.90)
-        
-        Returns:
-            List of answerable questions (or valid anchors)
-        """
+        return is_grammatically_valid
 
-        # DEFINING THE HARD FLOOR
-        # If the model is less than 50% sure, it's garbage. 
-        # Don't even try to save it.
-        KILL_ZONE = 0.50
+    def check_answerability(self, context, questions, threshold=0.90):
+        """
+        Final Logic: 
+        1. Overlap Check (Is the Question grounded in the Source?) -> Kills Hallucinations
+        2. Grammar Check (Is the Answer a real Noun/Verb?) -> Kills Stopwords
+        3. NO Triviality Check -> Preserves Identity/Entity Tests.
+        """
+        MIN_SCORE = 0.50  
+        MIN_OVERLAP = 0.50 
 
         answerable_questions = []
+        
         for question in questions:
-            print(f"Checking question: {question}")
-            # Prepare input
+            # --- 1. PRE-FILTER: Lexical Overlap ---
+            # This is your primary defense against "Hallucinated Questions"
+            # If the question asks about "dogs" and the text is about "cats", it dies here.
+            overlap_score = self._get_lexical_overlap(question, context)
+            if overlap_score < MIN_OVERLAP:
+                print(f"❌ REJECT: Hallucination? (Overlap {overlap_score:.2f}) | Q: {question}")
+                continue
+
+            # --- 2. MODEL CHECK ---
             inputs = self._preprocess_inputs(question, context).to(self.device)
-
-            # Get model outputs
-            answerability_score = self._get_answerability_score(inputs)
+            score = self._get_answerability_score(inputs)
             
-            status = "❌ FAIL"
-            
-            # ZONE 1: High Confidence -> Auto Pass
-            if answerability_score > threshold:
-                status = "✅ PASS (High Conf)"
-                answerable_questions.append(question)
+            # --- 3. ANCHOR CHECK ---
+            try:
+                qa_result = self.anchor_qa_pipe(
+                    question=question, 
+                    context=context, 
+                    handle_impossible_answer=False,
+                    topk=1
+                )
+                answer_text = qa_result['answer']
                 
-            # ZONE 2: Kill Zone -> Auto Fail
-            elif answerability_score < KILL_ZONE:
-                status = "❌ FAIL (Low Conf)"
-                # Do NOT try to anchor check. Just drop it.
-                
-            # ZONE 3: The "Rescue" Zone (0.50 - 0.95)
-            # Only apply the Anchor Heuristic to "Maybe" questions
-            else:
-                try:
-                    # Force extraction
-                    qa_result = self.anchor_qa_pipe(
-                        question=question, 
-                        context=context, 
-                        handle_impossible_answer=False,
-                        topk=1
-                    )
-                    answer_text = qa_result['answer']
-                    
-                    if self._is_valid_anchor(answer_text, context):
-                        status = f"⚓ ANCHOR (RESCUED) - Ans: '{answer_text}'"
-                        answerable_questions.append(question)
-                    else:
-                        status = "❌ FAIL (Bad Anchor)"
-                except:
-                    status = "❌ FAIL (Error)"
+                # Check A: Empty?
+                if not answer_text or answer_text.strip() == "":
+                    continue
 
-            print(f"Score: {answerability_score:.2f} | {status}")
+                # Check B: Grammatical Significance (The "Meat" Check)
+                # Validates that we extracted a Subject, Object, or Verb.
+                # (Prevents "is", "the", "very")
+                is_significant = self._is_significant_anchor(answer_text, context)
+                
+                # [REMOVED] Triviality Check 
+                # We WANT tautologies like "What car?" -> "The red car". 
+                # They serve as "Existence Proofs" for the translation.
+
+                if score > MIN_SCORE and is_significant:
+                    answerable_questions.append(question)
+                    print(f"✅ ACCEPT: Score {score:.2f} | Anchor: '{answer_text}' | Q: {question}")
+                else:
+                    print(f"❌ REJECT: Weak Anchor ({score:.2f}) | Ans: '{answer_text}'")
             
+            except Exception:
+                continue
+                
         return answerable_questions
 
 
