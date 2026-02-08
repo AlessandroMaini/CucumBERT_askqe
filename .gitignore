@@ -9,3 +9,10 @@ contratico/batch_check_order.py
 contratico/check_order.py
 QA/validate_qa_counts.py
 QA/filter_answers.py
+evaluation/validate_qa_counts.py
+evaluation/filter_answers.py
+contratico/batch_check_order.py
+contratico/check_order.py
+evaluation/pearson-correlation/extract_results.py
+QA/filter_answers.py
+QA/validate_qa_counts.py
