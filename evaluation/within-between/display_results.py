@@ -14,7 +14,7 @@ def load_results(filepath: Path) -> Dict:
         return json.load(f)
 
 
-def display_results(results: Dict, verbose: bool = False):
+def display_results(results: Dict):
     """Display results in a readable format."""
     print(f"\n{'='*80}")
     print(f"Results for: {results['target_lang']}")
@@ -46,13 +46,6 @@ def display_results(results: Dict, verbose: bool = False):
             print(f"{metric.upper():<10} | {between:>14.6f} (n={scores['diff_between_count']:<4}) "
                   f"| {within:>14.6f} (n={scores['diff_within_count']:<4}) "
                   f"| {ratio:>10.4f}")
-        
-        if verbose:
-            print("\nDetailed counts:")
-            for metric, scores in pipeline_result['metrics'].items():
-                print(f"  {metric.upper()}:")
-                print(f"    Between comparisons: {scores['diff_between_count']}")
-                print(f"    Within comparisons: {scores['diff_within_count']}")
 
 
 def compare_pipelines(results: Dict):
@@ -96,11 +89,6 @@ def main():
         help='Path to results JSON file'
     )
     parser.add_argument(
-        '--verbose',
-        action='store_true',
-        help='Show detailed information'
-    )
-    parser.add_argument(
         '--compare',
         action='store_true',
         help='Show pipeline comparison'
@@ -108,13 +96,21 @@ def main():
     
     args = parser.parse_args()
     
+    # Get workspace root (2 levels up from this script in evaluation/within-between/)
+    script_dir = Path(__file__).resolve().parent
+    workspace_root = script_dir.parent.parent
+    
+    # Resolve result file path relative to workspace root if not absolute
     result_path = Path(args.result_file)
+    if not result_path.is_absolute():
+        result_path = workspace_root / result_path
+    
     if not result_path.exists():
         print(f"Error: File not found: {result_path}")
         return
     
     results = load_results(result_path)
-    display_results(results, args.verbose)
+    display_results(results)
     
     if args.compare:
         compare_pipelines(results)

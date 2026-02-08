@@ -5,16 +5,16 @@ from pathlib import Path
 from scipy.stats import pearsonr
 
 # Define perturbation types
-PERTURBATIONS = ["synonym", "alteration", "spelling", "expansion_impact", "expansion_noimpact"]
+PERTURBATIONS = ["synonym", "alteration", "omission", "expansion_noimpact"]
 
 # Define datasets
-DATASETS = ["en-es", "en-es-mini", "en-fr", "en-fr-mini", "en-hi", "en-tl", "en-zh"]
+DATASETS = ["en-es", "en-es-mini", "en-fr", "en-fr-mini"]
 
 # Define pipelines
-PIPELINES = ["vanilla", "semantic", "atomic", "anscheck"]
+PIPELINES = ["vanilla", "atomic", "anscheck"]
 
 # Define anscheck types
-ANSCHECK_TYPES = ["longformer", "electra", "electra-null"]
+ANSCHECK_TYPES = ["longformer", "electra"]
 
 # Define metric configurations
 # Standard metrics: stored as {metric}/{dataset}/{perturbation}.jsonl
@@ -198,7 +198,7 @@ def main():
         type=str,
         required=True,
         choices=PIPELINES,
-        help="Pipeline for AskQE metric (vanilla, semantic, atomic, anscheck)"
+        help="Pipeline for AskQE metric (vanilla, atomic, anscheck)"
     )
     
     parser.add_argument(

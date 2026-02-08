@@ -10,8 +10,8 @@ from pathlib import Path
 # Define all possible values
 ASKQE_METRICS = ["f1", "em", "bleu", "chrf", "sbert"]
 STANDARD_METRICS = ["xcomet", "bt_score"]
-PIPELINES = ["vanilla", "semantic", "atomic", "anscheck"]
-ANSCHECK_TYPES = ["longformer", "electra", "electra-null"]
+PIPELINES = ["vanilla", "atomic", "anscheck"]
+ANSCHECK_TYPES = ["longformer", "electra"]
 
 
 def run_correlation(dataset, askqe_metric, standard_metric, pipeline, anscheck_type=None):
@@ -48,14 +48,14 @@ def main():
         print("\nThis will compute correlations for all combinations of:")
         print("  - AskQE metrics: f1, em, bleu, chrf, sbert")
         print("  - Standard metrics: xcomet, bt_score")
-        print("  - Pipelines: vanilla, semantic, atomic, anscheck (with all anscheck types)")
+        print("  - Pipelines: vanilla, atomic, anscheck (with all anscheck types)")
         sys.exit(1)
     
     dataset = sys.argv[1]
     
     print(f"Computing correlations for dataset: {dataset}")
-    print(f"This will run {len(ASKQE_METRICS)} AskQE metrics × {len(STANDARD_METRICS)} standard metrics × {len(PIPELINES) + 2} pipeline configurations")
-    print(f"Total: {len(ASKQE_METRICS) * len(STANDARD_METRICS) * (len(PIPELINES) + 2)} correlation analyses\n")
+    print(f"This will run {len(ASKQE_METRICS)} AskQE metrics × {len(STANDARD_METRICS)} standard metrics × {len(PIPELINES) + 1} pipeline configurations")
+    print(f"Total: {len(ASKQE_METRICS) * len(STANDARD_METRICS) * (len(PIPELINES) + 1)} correlation analyses\n")
     
     successful = 0
     failed = 0
@@ -64,8 +64,8 @@ def main():
     # Iterate through all combinations
     for askqe_metric in ASKQE_METRICS:
         for standard_metric in STANDARD_METRICS:
-            # Regular pipelines (vanilla, semantic, atomic)
-            for pipeline in ["vanilla", "semantic", "atomic"]:
+            # Regular pipelines (vanilla, atomic)
+            for pipeline in ["vanilla", "atomic"]:
                 total += 1
                 if run_correlation(dataset, askqe_metric, standard_metric, pipeline):
                     successful += 1

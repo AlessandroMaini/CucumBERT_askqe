@@ -138,8 +138,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--threshold", 
         type=float, 
-        default=0.5, 
-        help="Probability threshold for entailment (default: 0.5)"
+        default=0.9, 
+        help="Probability threshold for entailment (default: 0.9)"
     )
 
     args = parser.parse_args()

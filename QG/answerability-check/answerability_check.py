@@ -3,22 +3,7 @@ import json
 import numpy as np
 import argparse
 from pathlib import Path
-import spacy
-from transformers import (
-    LongformerTokenizer, 
-    LongformerForSequenceClassification, 
-    ElectraTokenizerFast, 
-    ElectraForQuestionAnswering,
-    pipeline
-)
-import nltk
-from nltk.corpus import stopwords
-
-# Ensure stopwords are downloaded
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords')
+from transformers import LongformerTokenizer, LongformerForSequenceClassification, ElectraTokenizerFast, ElectraForQuestionAnswering
 
 class AnswerabilityChecker:
     def __init__(self, check_variant="longformer"):
@@ -26,22 +11,15 @@ class AnswerabilityChecker:
         Initialize the answerability checker with a specific model.
         
         Args:
-            check_variant: Type of checker to use ("longformer", "electra", or "electra-null")
+            check_variant: Type of checker to use ("longformer" or "electra")
         """
         self.check_variant = check_variant
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.stop_words = set(stopwords.words('english'))
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except:
-            print("Downloading spaCy model...")
-            spacy.cli.download("en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
         
         # Select model based on variant
         if check_variant == "longformer":
             model_name = "potsawee/longformer-large-4096-answerable-squad2"
-        elif check_variant == "electra" or check_variant == "electra-null":
+        elif check_variant == "electra":
             model_name = "deepset/electra-base-squad2"
         else:
             raise ValueError(f"Unknown check_variant: {check_variant}")
@@ -51,17 +29,6 @@ class AnswerabilityChecker:
         # Load model and tokenizer once
         self.tokenizer, self.model = self._load_model(model_name)
         self.model.to(self.device)
-        
-        # --- NEW: Load QA Pipeline for Anchor Check ---
-        # We need a reliable QA model to extract the answer string for the Anchor Test.
-        # Using a standard, fast model for extraction.
-        print("Loading auxiliary QA model for Anchor Check...")
-        self.anchor_qa_pipe = pipeline(
-            "question-answering", 
-            model="deepset/roberta-base-squad2", 
-            tokenizer="deepset/roberta-base-squad2",
-            device=0 if torch.cuda.is_available() else -1
-        )
         
         print("Answerability checker loaded successfully.")
     
@@ -87,7 +54,7 @@ class AnswerabilityChecker:
                 truncation=True, 
                 return_tensors="pt"
             )
-        elif self.check_variant == "electra" or self.check_variant == "electra-null":
+        elif self.check_variant == "electra":
             inputs = self.tokenizer(
                 question,
                 context,
@@ -99,26 +66,6 @@ class AnswerabilityChecker:
             raise ValueError(f"Unknown check_variant: {self.check_variant}")
         return inputs
     
-    def _get_lexical_overlap(self, question, context):
-        """
-        Calculates how many content words in the Question actually exist in the Source.
-        Returns a float (0.0 to 1.0).
-        """
-        q_doc = self.nlp(question.lower())
-        c_doc = self.nlp(context.lower())
-        
-        # Get lemmas of content words (NO PUNCT, NO STOP, NO PRON)
-        q_lemmas = [t.lemma_ for t in q_doc if t.pos_ in ["NOUN", "VERB", "ADJ", "PROPN"] and not t.is_stop]
-        c_lemmas = set([t.lemma_ for t in c_doc if not t.is_stop])
-        
-        if not q_lemmas:
-            return 1.0 # If question has no content words (e.g. "Who is it?"), skip this check.
-            
-        # Count how many match
-        match_count = sum(1 for lemma in q_lemmas if lemma in c_lemmas)
-        
-        return match_count / len(q_lemmas)
-
     def _get_answerability_score(self, inputs):
         """Calculate answerability score based on the check variant."""
         if self.check_variant == "longformer":
@@ -149,111 +96,46 @@ class AnswerabilityChecker:
             # 4. Convert to 0-100 probability using Sigmoid
             answerability_score = torch.sigmoid(raw_diff).item()
         
-        elif self.check_variant == "electra-null":
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-
-            # 1. Get the score for the [CLS] token (index 0)
-            null_score = outputs.start_logits[0, 0] + outputs.end_logits[0, 0]
-            
-            # 2. Invert it to get "Answerability"
-            answerability_logit = -null_score
-            
-            # 3. Apply Sigmoid
-            answerability_score = 1 - torch.exp(-answerability_logit)
-        
         else:
             raise ValueError(f"Unknown check_variant: {self.check_variant}")
         return answerability_score
     
-    def _is_significant_anchor(self, answer_text, context_text):
-        """
-        RELAXED Anchor Check (Content Word Strategy).
-        Validates that the answer contains at least one 'content word' 
-        (Noun, Verb, Adjective, Proper Noun).
-        """
-        ans_doc = self.nlp(answer_text)
-        
-        # 1. Check for Content Words
-        has_content = False
-        for token in ans_doc:
-            if token.pos_ in ["NOUN", "VERB", "ADJ", "PROPN", "NUM"]:
-                has_content = True
-                break
-        
-        # 2. Check for Length (Single-letter answers are rarely valid in this context)
-        if len(answer_text) < 2: 
-            return False
-            
-        return has_content
-
     def check_answerability(self, context, questions, threshold=0.90):
         """
-        Final Logic: 
-        1. Overlap Check (Is the Question grounded in the Source?) -> Kills Hallucinations
-        2. Grammar Check (Is the Answer a real Noun/Verb?) -> Kills Stopwords
-        3. NO Triviality Check -> Preserves Identity/Entity Tests.
-        """
-        MIN_SCORE = 0.50  
-        MIN_OVERLAP = 0.50 
-
-        answerable_questions = []
+        Check answerability of questions against a context.
         
+        Args:
+            context: The context/sentence to check questions against
+            questions: List of questions to check
+            threshold: Answerability score threshold (default: 0.90)
+        
+        Returns:
+            List of answerable questions that meet the threshold
+        """
+        answerable_questions = []
         for question in questions:
-            # --- 1. PRE-FILTER: Lexical Overlap ---
-            # This is your primary defense against "Hallucinated Questions"
-            # If the question asks about "dogs" and the text is about "cats", it dies here.
-            overlap_score = self._get_lexical_overlap(question, context)
-            if overlap_score < MIN_OVERLAP:
-                print(f"❌ REJECT: Hallucination? (Overlap {overlap_score:.2f}) | Q: {question}")
-                continue
-
-            # --- 2. MODEL CHECK ---
+            print(f"Checking question: {question}")
+            # Prepare input
             inputs = self._preprocess_inputs(question, context).to(self.device)
-            score = self._get_answerability_score(inputs)
-            
-            # --- 3. ANCHOR CHECK ---
-            try:
-                qa_result = self.anchor_qa_pipe(
-                    question=question, 
-                    context=context, 
-                    handle_impossible_answer=False,
-                    topk=1
-                )
-                answer_text = qa_result['answer']
-                
-                # Check A: Empty?
-                if not answer_text or answer_text.strip() == "":
-                    continue
 
-                # Check B: Grammatical Significance (The "Meat" Check)
-                # Validates that we extracted a Subject, Object, or Verb.
-                # (Prevents "is", "the", "very")
-                is_significant = self._is_significant_anchor(answer_text, context)
-                
-                # [REMOVED] Triviality Check 
-                # We WANT tautologies like "What car?" -> "The red car". 
-                # They serve as "Existence Proofs" for the translation.
+            # Get model outputs
+            answerability_score = self._get_answerability_score(inputs)
 
-                if score > MIN_SCORE and is_significant:
-                    answerable_questions.append(question)
-                    print(f"✅ ACCEPT: Score {score:.2f} | Anchor: '{answer_text}' | Q: {question}")
-                else:
-                    print(f"❌ REJECT: Weak Anchor ({score:.2f}) | Ans: '{answer_text}'")
-            
-            except Exception:
-                continue
-                
+            status = "✅ PASS" if answerability_score >= threshold else "❌ FAIL"
+            print(f"Answerability score: {answerability_score:.2f} {status}\n")
+            if answerability_score >= threshold:
+                answerable_questions.append(question)
+        
         return answerable_questions
 
 
-def process_questions_file(input_file, anscheck_type, threshold=0.95):
+def process_questions_file(input_file, anscheck_type, threshold=0.90):
     """
     Process a questions JSONL file and filter by answerability.
     
     Args:
         input_file: Path to input JSONL file with questions
-        anscheck_type: Type of answerability check ("longformer", "electra", "electra-null")
+        anscheck_type: Type of answerability check ("longformer", "electra")
         threshold: Answerability score threshold (default: 0.90)
     """
     # Get the workspace root (2 levels up from this script in QG/code/)
@@ -302,9 +184,6 @@ def process_questions_file(input_file, anscheck_type, threshold=0.95):
             try:
                 data = json.loads(line)
                 
-                # Extract context and questions from the record
-                # Assuming the record has fields like "context", "sentence", or similar for context
-                # and "questions" as a list (stored as JSON string)
                 context = data.get("en", "")
                 questions_raw = data.get("questions", "[]")
                 
@@ -388,15 +267,15 @@ if __name__ == "__main__":
         "--anscheck_type",
         type=str,
         required=True,
-        choices=["longformer", "electra", "electra-null"],
+        choices=["longformer", "electra"],
         help="Type of answerability check to use"
     )
     
     parser.add_argument(
         "--threshold",
         type=float,
-        default=0.95,
-        help="Answerability score threshold (0-1, default: 0.95)"
+        default=0.90,
+        help="Answerability score threshold (0-1, default: 0.90)"
     )
     
     args = parser.parse_args()

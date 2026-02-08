@@ -21,14 +21,11 @@ language_configs = [
     ("es", True),   # mini version
     ("fr", False),
     ("fr", True),   # mini version
-    ("hi", False),
-    ("tl", False),
-    ("zh", False)
 ]
 
-pipelines = ["vanilla", "semantic", "atomic", "anscheck"]
-perturbations = ["alteration", "expansion_impact", "expansion_noimpact", "intensifier", "omission", "spelling", "synonym", "word_order"]
-check_variants = ["longformer", "electra", "electra-null"]
+pipelines = ["vanilla", "atomic", "anscheck"]
+perturbations = ["alteration", "expansion_noimpact", "omission", "synonym"]
+check_variants = ["longformer", "electra"]
 
 
 for language, is_mini in language_configs:

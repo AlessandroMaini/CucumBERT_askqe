@@ -31,15 +31,12 @@ language_configs = [
     ("es", True),   # mini version
     ("fr", False),
     ("fr", True),   # mini version
-    ("hi", False),
-    ("tl", False),
-    ("zh", False)
 ]
 
-pipelines = ["vanilla", "semantic", "atomic", "anscheck"]
-perturbations = ["synonym", "word_order", "spelling", "expansion_noimpact",
-                 "intensifier", "expansion_impact", "omission", "alteration"]
-check_variants = ["longformer", "electra", "electra-null"]
+pipelines = ["vanilla", "atomic", "anscheck"]
+perturbations = ["synonym", "expansion_noimpact",
+                 "omission", "alteration"]
+check_variants = ["longformer", "electra"]
 
 
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
@@ -77,7 +74,6 @@ for language, is_mini in language_configs:
                 # Build dataset name
                 dataset_name = f"en-{language}{'-mini' if is_mini else ''}"
                 
-                # Build output JSONL path consistent with string-comparison and compute_correlation
                 # Structure: sbert/{dataset}/{pipeline}/[anscheck-type if applicable-]{perturbation}.jsonl
                 if pipeline == "anscheck" and check_variant:
                     output_jsonl_dir = script_dir / dataset_name / pipeline

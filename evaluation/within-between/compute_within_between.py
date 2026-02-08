@@ -6,8 +6,8 @@ This script calculates two types of mean squared difference scores:
 - DIFF_WITHIN: Average squared difference within the same category (critical or minimal)
 
 Categories:
-- CRITICAL: omission, expansion_impact, alteration
-- MINIMAL: spelling, synonym, expansion_noimpact, word_order
+- CRITICAL: omission, alteration
+- MINIMAL: synonym, expansion_noimpact
 
 The script reads evaluation results from:
 - evaluation/string-comparison/{lang}/{pipeline}/: for f1, em, chrf, bleu metrics
@@ -20,10 +20,9 @@ from pathlib import Path
 from collections import defaultdict
 import itertools
 
-
 # Perturbation categories
-CRITICAL_PERTURBATIONS = ['omission', 'expansion_impact', 'alteration']
-MINIMAL_PERTURBATIONS = ['spelling', 'synonym', 'expansion_noimpact', 'word_order']
+CRITICAL_PERTURBATIONS = ['omission', 'alteration']
+MINIMAL_PERTURBATIONS = ['synonym', 'expansion_noimpact']
 
 # AskQE metrics to evaluate
 ASKQE_METRICS = ['sbert', 'f1', 'em', 'chrf', 'bleu']
@@ -257,7 +256,7 @@ def process_pipeline(eval_dir, target_lang, pipeline, anscheck_type=None):
         eval_dir: Path to evaluation directory
         target_lang: Target language code (e.g., 'en-es')
         pipeline: Pipeline name ('vanilla', 'atomic', or 'anscheck')
-        anscheck_type: Anscheck variant ('longformer', 'electra', 'electra-null') if applicable
+        anscheck_type: Anscheck variant ('longformer', 'electra') if applicable
     
     Returns:
         Dictionary with results or None if no data found
@@ -302,12 +301,6 @@ def main():
         description='Compute within and between category differences for AskQE metrics'
     )
     parser.add_argument(
-        '--eval-dir',
-        type=str,
-        default='evaluation',
-        help='Path to evaluation directory (default: evaluation)'
-    )
-    parser.add_argument(
         '--target-lang',
         type=str,
         required=True,
@@ -322,7 +315,11 @@ def main():
     
     args = parser.parse_args()
     
-    eval_dir = Path(args.eval_dir)
+    # Get workspace root (2 levels up from this script in evaluation/within-between/)
+    script_dir = Path(__file__).resolve().parent
+    workspace_root = script_dir.parent.parent
+    
+    eval_dir = workspace_root / 'evaluation'
     
     if not eval_dir.exists():
         print(f"Error: Evaluation directory not found: {eval_dir}")
@@ -341,7 +338,7 @@ def main():
         all_results.append(result)
     
     # Process anscheck pipelines
-    for anscheck_type in ['longformer', 'electra', 'electra-null']:
+    for anscheck_type in ['longformer', 'electra']:
         result = process_pipeline(eval_dir, args.target_lang, 'anscheck', anscheck_type)
         if result:
             all_results.append(result)
@@ -350,7 +347,7 @@ def main():
     if args.output:
         output_path = Path(args.output)
     else:
-        output_path = Path('evaluation/within-between') / f'results_{args.target_lang}.json'
+        output_path = script_dir / f'results_{args.target_lang}.json'
     
     output_path.parent.mkdir(parents=True, exist_ok=True)
     

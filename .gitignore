@@ -5,3 +5,7 @@ evaluation/filter_answers.py
 evaluation/validate_qa_counts.py
 evaluation/pearson-correlation/extract_results.py
 evaluation/pearson-correlation/results/summary.json
+contratico/batch_check_order.py
+contratico/check_order.py
+QA/validate_qa_counts.py
+QA/filter_answers.py
