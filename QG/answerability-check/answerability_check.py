@@ -133,7 +133,7 @@ class AnswerabilityChecker:
             answerability_logit = -null_score
             
             # 3. Apply Sigmoid
-            answerability_score = torch.sigmoid(answerability_logit).item()
+            answerability_score = 1 - np.exp(-answerability_logit)
         
         else:
             raise ValueError(f"Unknown check_variant: {self.check_variant}")
@@ -142,25 +142,26 @@ class AnswerabilityChecker:
     def _is_valid_anchor(self, answer, context):
         """
         Determines if a 'hallucinated' answer is actually a useful 'Anchor'.
-        The answer must be physically present in the source text.
+        STRICTER VERSION.
         """
         ans_clean = answer.strip().lower()
         ctx_clean = context.strip().lower()
         
-        # 1. Must be physically present in the source
+        # 1. Minimum Length: "sat" is too short. "sat on the mat" is better.
+        # Require at least 4 characters and 1 non-stopword.
+        if len(ans_clean) < 4: 
+            return False
+            
+        # 2. Stopword Ratio: If answer is "of the", kill it.
+        ans_tokens = ans_clean.split()
+        non_stop_tokens = [t for t in ans_tokens if t not in self.stop_words]
+        
+        # If the answer is purely stopwords (e.g. "it is"), it's not a valid anchor.
+        if not non_stop_tokens:
+            return False
+            
+        # 3. Exact Match Check
         if ans_clean not in ctx_clean:
-            return False
-            
-        # 2. Must not be empty
-        if not ans_clean:
-            return False
-            
-        # 3. Must not be just a stopword (avoids "The", "Is", "And")
-        if ans_clean in self.stop_words:
-            return False
-            
-        # 4. Length check (must be > 2 chars)
-        if len(ans_clean) < 3:
             return False
             
         return True
@@ -178,6 +179,12 @@ class AnswerabilityChecker:
         Returns:
             List of answerable questions (or valid anchors)
         """
+
+        # DEFINING THE HARD FLOOR
+        # If the model is less than 10% sure, it's garbage. 
+        # Don't even try to save it.
+        HARD_FLOOR = 0.10
+
         answerable_questions = []
         for question in questions:
             print(f"Checking question: {question}")
@@ -187,27 +194,37 @@ class AnswerabilityChecker:
             # Get model outputs
             answerability_score = self._get_answerability_score(inputs)
             
-            # --- Logic Change: Apply Anchor Check on Failure ---
+            # CASE 1: High Confidence (Keep)
             if answerability_score >= threshold:
-                status = "✅ PASS"
+                status = "✅ PASS (High Score)"
                 answerable_questions.append(question)
+                
+            # CASE 2: Low Confidence (Hard Filter)
+            elif answerability_score < HARD_FLOOR:
+                status = "❌ FAIL (Score too low)"
+                # We drop this. No anchor check.
+                
+            # CASE 3: Grey Area (Rescue via Anchor)
             else:
-                # If Score < Threshold, try to rescue it via Anchor Check
                 try:
-                    # Get the raw answer from the source using the auxiliary QA model
-                    qa_result = self.anchor_qa_pipe(question=question, context=context)
+                    # Force extraction
+                    qa_result = self.anchor_qa_pipe(
+                        question=question, 
+                        context=context, 
+                        handle_impossible_answer=False, 
+                        topk=1
+                    )
                     answer_text = qa_result['answer']
                     
                     if self._is_valid_anchor(answer_text, context):
                         status = f"⚓ ANCHOR (RESCUED) - Ans: '{answer_text}'"
                         answerable_questions.append(question)
                     else:
-                        status = "❌ FAIL"
-                except Exception as e:
-                    print(f"Anchor check error: {e}")
-                    status = "❌ FAIL"
+                        status = "❌ FAIL (Bad Anchor)"
+                except Exception:
+                    status = "❌ FAIL (Error)"
 
-            print(f"Answerability score: {answerability_score:.2f} {status}\n")
+            print(f"Score: {answerability_score:.2f} | {status}")
         
         return answerable_questions
 
