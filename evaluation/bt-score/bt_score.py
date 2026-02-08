@@ -4,7 +4,6 @@ import argparse
 from pathlib import Path
 from bert_score import score
 
-
 def main():
     parser = argparse.ArgumentParser(description="Evaluate backtranslation quality using BERTScore")
     parser.add_argument("--model_type", type=str, default="microsoft/deberta-xlarge-mnli",
@@ -26,13 +25,10 @@ def main():
         ("es", True),   # mini version
         ("fr", False),
         ("fr", True),   # mini version
-        ("hi", False),
-        ("tl", False),
-        ("zh", False)
     ]
 
-    perturbations = ["synonym", "word_order", "spelling", "expansion_noimpact",
-                     "intensifier", "expansion_impact", "omission", "alteration"]
+    perturbations = ["synonym", "expansion_noimpact",
+                     "omission", "alteration"]
 
     for language, is_mini in language_configs:
         for perturbation in perturbations:

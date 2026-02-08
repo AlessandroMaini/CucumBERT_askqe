@@ -31,15 +31,12 @@ language_configs = [
     ("es", True),   # mini version
     ("fr", False),
     ("fr", True),   # mini version
-    ("hi", False),
-    ("tl", False),
-    ("zh", False)
 ]
 
-pipelines = ["vanilla", "semantic", "atomic", "anscheck"]
-perturbations = ["synonym", "word_order", "spelling", "expansion_noimpact",
-                 "intensifier", "expansion_impact", "omission", "alteration"]
-check_variants = ["longformer", "electra", "electra-null"]
+pipelines = ["vanilla", "atomic", "anscheck"]
+perturbations = ["synonym", "expansion_noimpact",
+                 "omission", "alteration"]
+check_variants = ["longformer", "electra"]
 
 
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
@@ -77,15 +74,13 @@ for language, is_mini in language_configs:
                 # Build dataset name
                 dataset_name = f"en-{language}{'-mini' if is_mini else ''}"
                 
-                # Build output JSONL path to match string-comparison structure
-                # For anscheck: en-es-mini/anscheck/electra-perturbation.jsonl
-                # For others: en-es-mini/vanilla-perturbation.jsonl (to avoid overwriting between pipelines)
+                # Structure: sbert/{dataset}/{pipeline}/[anscheck-type if applicable-]{perturbation}.jsonl
                 if pipeline == "anscheck" and check_variant:
-                    output_jsonl_dir = script_dir / dataset_name / "anscheck"
+                    output_jsonl_dir = script_dir / dataset_name / pipeline
                     output_jsonl_filename = f"{check_variant}-{perturbation}.jsonl"
                 else:
-                    output_jsonl_dir = script_dir / dataset_name
-                    output_jsonl_filename = f"{pipeline}-{perturbation}.jsonl"
+                    output_jsonl_dir = script_dir / dataset_name / pipeline
+                    output_jsonl_filename = f"{perturbation}.jsonl"
                 
                 output_jsonl_dir.mkdir(parents=True, exist_ok=True)
                 output_jsonl_path = output_jsonl_dir / output_jsonl_filename

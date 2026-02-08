@@ -1,5 +1,3 @@
-# 10. EVALUATION CLASSIC MT
-
 from comet import download_model, load_from_checkpoint
 import json
 import torch
@@ -8,8 +6,8 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate MT quality using XCOMET")
-    parser.add_argument("--model", type=str, default="Unbabel/wmt22-comet-da", 
-                        help="COMET model to use (default: Unbabel/wmt22-comet-da)")
+    parser.add_argument("--model", type=str, default="Unbabel/wmt22-cometkiwi-da", 
+                        help="COMET model to use (default: Unbabel/wmt22-cometkiwi-da)")
     parser.add_argument("--batch_size", type=int, default=16,
                         help="Batch size for prediction (default: 16)")
     args = parser.parse_args()
@@ -31,13 +29,10 @@ def main():
         ("es", True),   # mini version
         ("fr", False),
         ("fr", True),   # mini version
-        ("hi", False),
-        ("tl", False),
-        ("zh", False)
     ]
 
-    perturbations = ["synonym", "word_order", "spelling", "expansion_noimpact",
-                     "intensifier", "expansion_impact", "omission", "alteration"]
+    perturbations = ["synonym", "expansion_noimpact",
+                     "omission", "alteration"]
 
     for language, is_mini in language_configs:
         for perturbation in perturbations:
@@ -70,15 +65,14 @@ def main():
                 for line in f:
                     try:
                         data = json.loads(line)
-                        src = data.get('en', '')  # Reference is the original English
+                        src = data.get('en', '')  # Source is the original English
                         mt = data.get(f'pert_{language}', '')  # Prediction is the perturbed text
 
                         if src and mt:
                             records_to_process.append(data)
                             comet_input.append({
                                 "src": src,
-                                "mt": mt,
-                                "ref": src  # In MTQE, source is often used as a proxy reference
+                                "mt": mt
                             })
                     except json.JSONDecodeError:
                         continue

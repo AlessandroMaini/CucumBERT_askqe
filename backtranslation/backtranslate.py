@@ -3,7 +3,6 @@ import os
 import argparse
 import time
 import sys
-import re
 from pathlib import Path
 from deep_translator import GoogleTranslator
 
@@ -37,29 +36,17 @@ def run_backtranslation(input_file, source_lang, target_lang):
         print(f"Error: Input file '{input_path}' not found.")
         sys.exit(1)
     
-    # Parse input path to extract language, mini status, and perturbation
-    # Expected: contratico/en-{language}[-mini]/{perturbation}.jsonl
-    input_str = str(input_path)
-    
-    # Extract language from path
-    lang_match = re.search(r'en-([a-z]{2})(?:-mini)?', input_str)
-    if not lang_match:
-        print(f"Error: Could not extract language from input path: {input_path}")
-        sys.exit(1)
-    
-    language = lang_match.group(1)
-    
     # Check if mini dataset
     is_mini = "-mini" in input_path.parent.name
     
     # Extract perturbation from filename
     perturbation = input_path.stem
     
-    # Generate output path: backtranslation/en-{language}[-mini]/bt-{perturbation}.jsonl
+    # Generate output path: backtranslation/en-{source_lang}[-mini]/bt-{perturbation}.jsonl
     if is_mini:
-        output_dir = script_dir / f"en-{language}-mini"
+        output_dir = script_dir / f"en-{source_lang}-mini"
     else:
-        output_dir = script_dir / f"en-{language}"
+        output_dir = script_dir / f"en-{source_lang}"
     
     output_path = output_dir / f"bt-{perturbation}.jsonl"
 
