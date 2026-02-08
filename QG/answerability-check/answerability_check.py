@@ -3,8 +3,21 @@ import json
 import numpy as np
 import argparse
 from pathlib import Path
-from transformers import LongformerTokenizer, LongformerForSequenceClassification, ElectraTokenizerFast, ElectraForQuestionAnswering
+from transformers import (
+    LongformerTokenizer, 
+    LongformerForSequenceClassification, 
+    ElectraTokenizerFast, 
+    ElectraForQuestionAnswering,
+    pipeline
+)
+import nltk
+from nltk.corpus import stopwords
 
+# Ensure stopwords are downloaded
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
 
 class AnswerabilityChecker:
     def __init__(self, check_variant="longformer"):
@@ -16,6 +29,7 @@ class AnswerabilityChecker:
         """
         self.check_variant = check_variant
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.stop_words = set(stopwords.words('english'))
         
         # Select model based on variant
         if check_variant == "longformer":
@@ -30,6 +44,17 @@ class AnswerabilityChecker:
         # Load model and tokenizer once
         self.tokenizer, self.model = self._load_model(model_name)
         self.model.to(self.device)
+        
+        # --- NEW: Load QA Pipeline for Anchor Check ---
+        # We need a reliable QA model to extract the answer string for the Anchor Test.
+        # Using a standard, fast model for extraction.
+        print("Loading auxiliary QA model for Anchor Check...")
+        self.anchor_qa_pipe = pipeline(
+            "question-answering", 
+            model="deepset/roberta-base-squad2", 
+            tokenizer="deepset/roberta-base-squad2",
+            device=0 if torch.cuda.is_available() else -1
+        )
         
         print("Answerability checker loaded successfully.")
     
@@ -105,8 +130,6 @@ class AnswerabilityChecker:
             null_score = outputs.start_logits[0, 0] + outputs.end_logits[0, 0]
             
             # 2. Invert it to get "Answerability"
-            # If null_score is HIGH (e.g., +5), -null_score is LOW (-5) -> Sigmoid is ~0 (Not Answerable)
-            # If null_score is LOW (e.g., -5), -null_score is HIGH (+5) -> Sigmoid is ~1 (Answerable)
             answerability_logit = -null_score
             
             # 3. Apply Sigmoid
@@ -116,9 +139,36 @@ class AnswerabilityChecker:
             raise ValueError(f"Unknown check_variant: {self.check_variant}")
         return answerability_score
     
+    def _is_valid_anchor(self, answer, context):
+        """
+        Determines if a 'hallucinated' answer is actually a useful 'Anchor'.
+        The answer must be physically present in the source text.
+        """
+        ans_clean = answer.strip().lower()
+        ctx_clean = context.strip().lower()
+        
+        # 1. Must be physically present in the source
+        if ans_clean not in ctx_clean:
+            return False
+            
+        # 2. Must not be empty
+        if not ans_clean:
+            return False
+            
+        # 3. Must not be just a stopword (avoids "The", "Is", "And")
+        if ans_clean in self.stop_words:
+            return False
+            
+        # 4. Length check (must be > 2 chars)
+        if len(ans_clean) < 3:
+            return False
+            
+        return True
+
     def check_answerability(self, context, questions, threshold=0.90):
         """
         Check answerability of questions against a context.
+        Uses Anchor Check to rescue valid tautologies.
         
         Args:
             context: The context/sentence to check questions against
@@ -126,7 +176,7 @@ class AnswerabilityChecker:
             threshold: Answerability score threshold (default: 0.90)
         
         Returns:
-            List of answerable questions that meet the threshold
+            List of answerable questions (or valid anchors)
         """
         answerable_questions = []
         for question in questions:
@@ -136,11 +186,28 @@ class AnswerabilityChecker:
 
             # Get model outputs
             answerability_score = self._get_answerability_score(inputs)
-
-            status = "✅ PASS" if answerability_score >= threshold else "❌ FAIL"
-            print(f"Answerability score: {answerability_score:.2f} {status}\n")
+            
+            # --- Logic Change: Apply Anchor Check on Failure ---
             if answerability_score >= threshold:
+                status = "✅ PASS"
                 answerable_questions.append(question)
+            else:
+                # If Score < Threshold, try to rescue it via Anchor Check
+                try:
+                    # Get the raw answer from the source using the auxiliary QA model
+                    qa_result = self.anchor_qa_pipe(question=question, context=context)
+                    answer_text = qa_result['answer']
+                    
+                    if self._is_valid_anchor(answer_text, context):
+                        status = f"⚓ ANCHOR (RESCUED) - Ans: '{answer_text}'"
+                        answerable_questions.append(question)
+                    else:
+                        status = "❌ FAIL"
+                except Exception as e:
+                    print(f"Anchor check error: {e}")
+                    status = "❌ FAIL"
+
+            print(f"Answerability score: {answerability_score:.2f} {status}\n")
         
         return answerable_questions
 
