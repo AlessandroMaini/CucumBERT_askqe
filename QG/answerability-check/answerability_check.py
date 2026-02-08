@@ -168,46 +168,24 @@ class AnswerabilityChecker:
     
     def _is_significant_anchor(self, answer_text, context_text):
         """
-        STRICT Anchor Check:
-        The answer must be a GRAMMATICAL ENTITY (Subject, Object, or Named Entity).
+        RELAXED Anchor Check (Content Word Strategy).
+        Validates that the answer contains at least one 'content word' 
+        (Noun, Verb, Adjective, Proper Noun).
         """
-        # Parse the Context to find the answer's role
-        # Note: This is a heuristic. We search for the answer span in the context.
-        doc = self.nlp(context_text)
-        ans_span = None
-        
-        # Find the answer span in the doc
-        # (Simple string search; for perfect precision we'd align tokens, but this is fast)
-        start_idx = context_text.find(answer_text)
-        if start_idx == -1: return False # Should not happen if extraction worked
-        
-        # Locate the token in the doc that corresponds to this char position
-        for token in doc:
-            if token.idx == start_idx:
-                root_token = token
-                break
-        else:
-            # Fallback: analyze the answer string in isolation
-            ans_doc = self.nlp(answer_text)
-            root_token = [t for t in ans_doc if t.dep_ != "det"][-1] # Approximation
-
-        # CONSTRAINT 1: Dependency Role
-        # Valid roles: nsubj (subject), dobj (direct obj), pobj (preposition obj), attr (attribute)
-        # Invalid roles: det (the), amod (adjective), prep (of), advmod (very)
-        valid_deps = ["nsubj", "nsubjpass", "dobj", "pobj", "attr", "ROOT"]
-        
-        # CONSTRAINT 2: Named Entities
-        # If it's a Person, Org, GPE, Date -> Always Valid
-        has_entity = False
         ans_doc = self.nlp(answer_text)
-        if ans_doc.ents:
-            has_entity = True
-            
-        # THE CHECK:
-        # It must be a Valid Dependency OR contain a Named Entity
-        is_grammatically_valid = (root_token.dep_ in valid_deps) or has_entity
         
-        return is_grammatically_valid
+        # 1. Check for Content Words
+        has_content = False
+        for token in ans_doc:
+            if token.pos_ in ["NOUN", "VERB", "ADJ", "PROPN", "NUM"]:
+                has_content = True
+                break
+        
+        # 2. Check for Length (Single-letter answers are rarely valid in this context)
+        if len(answer_text) < 2: 
+            return False
+            
+        return has_content
 
     def check_answerability(self, context, questions, threshold=0.90):
         """
