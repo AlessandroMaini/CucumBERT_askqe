@@ -12,20 +12,6 @@ Original: {{original}}
 Perturbed: """
 
 
-perturb_spelling_fr = """Taks: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by making spelling of one or two words wrong. The words should be important words in the sentence but not words like "le", "et", "la" or "des". Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
-
-*** Example Starts ***
-Original: Le tribunal compétent sera celui du siège social de la société prestataire.
-Perturbed: Le triunal compétent sera celui du siège social de la soiété prestataire.
-
-Original: Les présentes conditions générales de vente s'appliquent à toute commande passée.
-Perturbed: Les présentes conditios générales de vente s'appliquet à toute commande passée.
-*** Example Ends ***
-
-Original: {{original}}
-Perturbed: """
-
-
 perturb_expansion_noimpact_fr = """Task: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by adding one or two words in the sentence. Do not add words that change the intensity of the existing word. Please make sure that the added word does not disturb the grammaticality of the sentence and does not changes the meaning in a significant way. The added words would add more context that was already obvious from the sentence. Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
 
 *** Example Starts ***
@@ -34,20 +20,6 @@ Perturbed: Tout litige juridique relatif à l'exécution du présent contrat éc
 
 Original: Les données collectées ne seront pas transmises à des tiers sans votre consentement.
 Perturbed: Les données personnelles collectées ne seront pas transmises à des tiers externes sans votre consentement.
-*** Example Ends ***
-
-Original: {{original}}
-Perturbed: """
-
-
-perturb_expansion_impact_fr = """Task: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by adding words in the sentence. Please make sure that the added word does not disturb the grammaticality of the sentence but should change the meaning in a significant way. Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
-
-*** Example Starts ***
-Original: Le Prestataire est tenu pour responsable des dommages directs subis par le Client.
-Perturbed: Le Prestataire est tenu pour responsable des dommages directs, indirects e immatériels subis par le Client.
-
-Original: Les informations confidentielles désignent les secrets de fabrication e les données clients.
-Perturbed: Les informations confidentielles désignent les secrets de fabrication, les stratégies commerciales e les données clients.
 *** Example Ends ***
 
 Original: {{original}}
@@ -71,6 +43,20 @@ Original: {{original}}
 Perturbed: """
 
 
+perturb_omission_fr = """Task: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by removing information from the sentence. Remove only one or two words from the sentence. Please make sure that the removed information does not disturb the grammaticality of the sentence but should change the meaning in a significant way. Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
+
+*** Example Starts ***
+Original: Le licencié est autorisé à reproduire et distribuer le logiciel original.
+Perturbed: Le licencié est autorisé à reproduire le logiciel original.
+
+Original: Cette garantie limitée exclut expressément les dommages intentionnels.
+Perturbed: Cette garantie limitée exclut expressément les dommages.
+*** Example Ends ***
+
+Original: {{original}}
+Perturbed: """
+
+
 perturb_synonym_es = """Task: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by replacing one or two words (noun, verb, adjective or adverb) to its synonym. Please make sure it does not changes the meaning in a significant way. Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
 
 *** Example Starts ***
@@ -85,20 +71,6 @@ Original: {{original}}
 Perturbed: """
 
 
-perturb_spelling_es = """Taks: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by making spelling of one or two words wrong. The words should be important words in the sentence but not words like "le", "et", "la" or "des". Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
-
-*** Example Starts ***
-Original: El juez dictó una sentencia que favorece a la parte demandante.
-Perturbed: El juez dictó una setencia que favorece a la parte demadante.
-
-Original: Este artículo regula la protección de los datos de carácter personal.
-Perturbed: Este artíulo regula la protección de los datos de carácer personal.
-*** Example Ends ***
-
-Original: {{original}}
-Perturbed: """
-
-
 perturb_expansion_noimpact_es = """Task: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by adding one or two words in the sentence. Do not add words that change the intensity of the existing word. Please make sure that the added word does not disturb the grammaticality of the sentence and does not changes the meaning in a significant way. The added words would add more context that was already obvious from the sentence. Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
 
 *** Example Starts ***
@@ -107,20 +79,6 @@ Perturbed: Cualquier controversia jurídica derivada de este contrato escrito se
 
 Original: Los datos recopilados no se compartirán con terceros sin su consentimiento expreso.
 Perturbed: Los datos personales recopilados no se compartirán con terceros ajenos sin su consentimiento expreso.
-*** Example Ends ***
-
-Original: {{original}}
-Perturbed: """
-
-
-perturb_expansion_impact_es = """Task: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by adding words in the sentence. Please make sure that the added word does not disturb the grammaticality of the sentence but should change the meaning in a significant way. Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
-
-*** Example Starts ***
-Original: El Proveedor será responsable de los daños directos causados por el incumplimiento del contrato.
-Perturbed: El Proveedor será responsable de los daños directos, indirectos y del lucro cesante causados por el incumplimiento del contrato.
-
-Original: La licencia otorgada permite el uso del software en un único dispositivo del Usuario.
-Perturbed: La licencia otorgada permite el uso del software en un único dispositivo del Usuario y la redistribución pública de su código fuente.
 *** Example Ends ***
 
 Original: {{original}}
@@ -144,18 +102,29 @@ Original: {{original}}
 Perturbed: """
 
 
+perturb_omission_es = """Task: You will be given a {{target_lang}} sentence and your goal is to perturb the sentence by removing information from the sentence. Remove only one or two words from the sentence. Please make sure that the removed information does not disturb the grammaticality of the sentence but should change the meaning in a significant way. Just output the perturbed {{target_lang}} sentence without giving any additional explanation.
+
+*** Example Starts ***
+Original: El arrendatario se compromete a pagar la renta y los gastos de comunidad.
+Perturbed: El arrendatario se compromete a pagar la renta.
+
+Original: La empresa garantiza la reparación o sustitución del producto defectuoso.
+Perturbed: La empresa garantiza la reparación del producto defectuoso.
+*** Example Ends ***
+
+Original: {{original}}
+Perturbed: """
+
 prompts = {
     # French
     "synonym_fr": perturb_synonym_fr,
-    "spelling_fr": perturb_spelling_fr,
     "expansion_noimpact_fr": perturb_expansion_noimpact_fr,
-    "expansion_impact_fr": perturb_expansion_impact_fr,
     "alteration_fr": perturb_alteration_fr,
+    "omission_fr": perturb_omission_fr,
 
     # Spanish
     "synonym_es": perturb_synonym_es,
-    "spelling_es": perturb_spelling_es,
     "expansion_noimpact_es": perturb_expansion_noimpact_es,
-    "expansion_impact_es": perturb_expansion_impact_es,
     "alteration_es": perturb_alteration_es,
+    "omission_es": perturb_omission_es
 }
