@@ -3,6 +3,7 @@ import json
 import numpy as np
 import argparse
 from pathlib import Path
+import spacy
 from transformers import (
     LongformerTokenizer, 
     LongformerForSequenceClassification, 
@@ -30,6 +31,7 @@ class AnswerabilityChecker:
         self.check_variant = check_variant
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.stop_words = set(stopwords.words('english'))
+        self.nlp = spacy.load("en_core_web_sm")
         
         # Select model based on variant
         if check_variant == "longformer":
@@ -141,32 +143,40 @@ class AnswerabilityChecker:
     
     def _is_valid_anchor(self, answer, context):
         """
-        Determines if a 'hallucinated' answer is actually a useful 'Anchor'.
-        STRICTER VERSION.
+        STRICT Anchor Check:
+        1. Must be in text.
+        2. Must contain at least one NOUN, PROPN, or VERB (Content Word).
+        3. Must not be a single stopword.
         """
-        ans_clean = answer.strip().lower()
-        ctx_clean = context.strip().lower()
+        ans_clean = answer.strip()
+        ctx_clean = context.strip()
         
-        # 1. Minimum Length: "sat" is too short. "sat on the mat" is better.
-        # Require at least 4 characters and 1 non-stopword.
-        if len(ans_clean) < 4: 
+        # 1. Exact phrase match (Case insensitive)
+        if ans_clean.lower() not in ctx_clean.lower():
             return False
             
-        # 2. Stopword Ratio: If answer is "of the", kill it.
-        ans_tokens = ans_clean.split()
-        non_stop_tokens = [t for t in ans_tokens if t not in self.stop_words]
-        
-        # If the answer is purely stopwords (e.g. "it is"), it's not a valid anchor.
-        if not non_stop_tokens:
+        # 2. Length Check (Single letter answers are usually noise)
+        if len(ans_clean) < 3:
             return False
-            
-        # 3. Exact Match Check
-        if ans_clean not in ctx_clean:
+
+        # 3. Linguistic Content Check (The "Meat" Test)
+        # We process the answer to see if it has substance.
+        doc = self.nlp(ans_clean)
+        
+        has_content = False
+        for token in doc:
+            # Check for Noun, Proper Noun, or Verb
+            if token.pos_ in ["NOUN", "PROPN", "VERB"] and not token.is_stop:
+                has_content = True
+                break
+        
+        # If the answer is just "The" (DET) or "Very" (ADV), reject it.
+        if not has_content:
             return False
             
         return True
 
-    def check_answerability(self, context, questions, threshold=0.90):
+    def check_answerability(self, context, questions, threshold=0.95):
         """
         Check answerability of questions against a context.
         Uses Anchor Check to rescue valid tautologies.
@@ -181,9 +191,9 @@ class AnswerabilityChecker:
         """
 
         # DEFINING THE HARD FLOOR
-        # If the model is less than 10% sure, it's garbage. 
+        # If the model is less than 50% sure, it's garbage. 
         # Don't even try to save it.
-        HARD_FLOOR = 0.10
+        KILL_ZONE = 0.50
 
         answerable_questions = []
         for question in questions:
@@ -194,24 +204,27 @@ class AnswerabilityChecker:
             # Get model outputs
             answerability_score = self._get_answerability_score(inputs)
             
-            # CASE 1: High Confidence (Keep)
-            if answerability_score >= threshold:
-                status = "✅ PASS (High Score)"
+            status = "❌ FAIL"
+            
+            # ZONE 1: High Confidence -> Auto Pass
+            if answerability_score > threshold:
+                status = "✅ PASS (High Conf)"
                 answerable_questions.append(question)
                 
-            # CASE 2: Low Confidence (Hard Filter)
-            elif answerability_score < HARD_FLOOR:
-                status = "❌ FAIL (Score too low)"
-                # We drop this. No anchor check.
+            # ZONE 2: Kill Zone -> Auto Fail
+            elif answerability_score < KILL_ZONE:
+                status = "❌ FAIL (Low Conf)"
+                # Do NOT try to anchor check. Just drop it.
                 
-            # CASE 3: Grey Area (Rescue via Anchor)
+            # ZONE 3: The "Rescue" Zone (0.50 - 0.95)
+            # Only apply the Anchor Heuristic to "Maybe" questions
             else:
                 try:
                     # Force extraction
                     qa_result = self.anchor_qa_pipe(
                         question=question, 
                         context=context, 
-                        handle_impossible_answer=False, 
+                        handle_impossible_answer=False,
                         topk=1
                     )
                     answer_text = qa_result['answer']
@@ -221,15 +234,15 @@ class AnswerabilityChecker:
                         answerable_questions.append(question)
                     else:
                         status = "❌ FAIL (Bad Anchor)"
-                except Exception:
+                except:
                     status = "❌ FAIL (Error)"
 
             print(f"Score: {answerability_score:.2f} | {status}")
-        
+            
         return answerable_questions
 
 
-def process_questions_file(input_file, anscheck_type, threshold=0.90):
+def process_questions_file(input_file, anscheck_type, threshold=0.95):
     """
     Process a questions JSONL file and filter by answerability.
     
@@ -377,8 +390,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--threshold",
         type=float,
-        default=0.90,
-        help="Answerability score threshold (0-1, default: 0.90)"
+        default=0.95,
+        help="Answerability score threshold (0-1, default: 0.95)"
     )
     
     args = parser.parse_args()
