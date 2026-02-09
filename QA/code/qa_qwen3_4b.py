@@ -62,10 +62,14 @@ class QuestionAnswerer:
             
         return decoded
 
-    def answer_questions(self, input_file, pipeline_type, sentence_key):
+    def answer_questions(self, input_file, pipeline_type, sentence_key, check_variant=None):
         """
         Main function to generate answers for the questions in the dataset.
         Output: QA/qwen3-4b/{language}-{pipeline_type}[-{perturbation}][-mini].jsonl
+        
+        Args:
+            check_variant: Optional. When pipeline_type is "anscheck", specifies the
+                          answerability checker type used in QG.
         """
         print(f"Starting QA Process.")
         
@@ -102,9 +106,15 @@ class QuestionAnswerer:
             perturbation = None
         
         # Build output filename
-        output_parts = [language, pipeline_type]
-        if perturbation:
-            output_parts.append(perturbation)
+        output_parts = [language]
+        if pipeline_type == "anscheck" and check_variant:
+            output_parts.extend(["anscheck", check_variant])
+            if perturbation:
+                output_parts.append(perturbation)
+        else:
+            output_parts.append(pipeline_type)
+            if perturbation:
+                output_parts.append(perturbation)
         
         output_filename = "-".join(output_parts)
         if is_mini:

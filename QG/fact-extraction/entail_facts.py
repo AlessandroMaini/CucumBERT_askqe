@@ -113,8 +113,8 @@ def process_dataset(input_file, tokenizer, model, device, threshold):
                     entailed_facts.append(hypothesis)
 
             # --- 3. Saving ---
-            # Update the record with only the valid facts
-            data['atomic_facts'] = entailed_facts
+            # Update the record with only the valid facts (stored as JSON string)
+            data['atomic_facts'] = json.dumps(entailed_facts, ensure_ascii=False)
             f_out.write(json.dumps(data, ensure_ascii=False) + '\n')
             f_out.flush()
 
@@ -138,8 +138,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--threshold", 
         type=float, 
-        default=0.5, 
-        help="Probability threshold for entailment (default: 0.5)"
+        default=0.9, 
+        help="Probability threshold for entailment (default: 0.9)"
     )
 
     args = parser.parse_args()
