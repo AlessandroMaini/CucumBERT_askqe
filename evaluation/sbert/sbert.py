@@ -108,14 +108,28 @@ for language, is_mini in language_configs:
                 num_comparisons = 0
 
                 try:
+                    # Load reference file into a dict keyed by ID
+                    ref_by_id = {}
+                    with open(reference_file, "r", encoding="utf-8") as ref_file:
+                        for ref_line in ref_file:
+                            try:
+                                ref_data = json.loads(ref_line)
+                                ref_id = ref_data.get("id")
+                                if ref_id is not None:
+                                    ref_by_id[ref_id] = ref_data
+                            except json.JSONDecodeError:
+                                continue
+
                     with open(predicted_file, "r", encoding="utf-8") as pred_file, \
-                         open(reference_file, "r", encoding="utf-8") as ref_file, \
                          open(output_jsonl_path, "w", encoding="utf-8") as jsonl_out:
                         
-                        for pred_line, ref_line in zip(pred_file, ref_file):
+                        for pred_line in pred_file:
                             try:
                                 pred_data = json.loads(pred_line)
-                                ref_data = json.loads(ref_line)
+                                pred_id = pred_data.get("id")
+                                if pred_id is None or pred_id not in ref_by_id:
+                                    continue
+                                ref_data = ref_by_id[pred_id]
 
                                 predicted_answers = pred_data.get("answers", [])
                                 reference_answers = ref_data.get("answers", [])
