@@ -1,0 +1,47 @@
+{
+  "dataset": "CONTRATICO EN-ES",
+  "model": "Qwen3-4B",
+  "variant": "factcoverage (E3)",
+  "baseline_coverage": {
+    "mean": 0.9581824279007378,
+    "median": 1.0,
+    "threshold": 0.7
+  },
+  "perturbation_scores": {
+    "synonym": {
+      "e3_f1": 0.8358811341824847,
+      "e3_em": 0.7243849206349207,
+      "baseline_f1": 0.7669499016507103,
+      "baseline_em": 0.5497728167149654,
+      "delta_f1": 0.06893123253177436
+    },
+    "expansion_noimpact": {
+      "e3_f1": 0.8607693020686792,
+      "e3_em": 0.7390849206349205,
+      "baseline_f1": 0.7899128317080416,
+      "baseline_em": 0.5554653679653679,
+      "delta_f1": 0.07085647036063758
+    },
+    "omission": {
+      "e3_f1": 0.7037513241554538,
+      "e3_em": 0.5987555555555555,
+      "baseline_f1": 0.673279541739913,
+      "baseline_em": 0.45377957105135525,
+      "delta_f1": 0.030471782415540827
+    },
+    "alteration": {
+      "e3_f1": 0.4368346673488196,
+      "e3_em": 0.3344580808080808,
+      "baseline_f1": 0.4442073851556286,
+      "baseline_em": 0.24031628825932624,
+      "delta_f1": -0.007372717806808982
+    }
+  },
+  "question_quality": {
+    "avg_q": 2.942,
+    "empty": 3,
+    "duplicates": 5,
+    "n": 500
+  },
+  "qg_time_seconds": 1443.1788878440857
+}
