@@ -1,0 +1,17 @@
+language,is_mini,perturbation,pipeline,check_variant,cosine_similarity,num_comparison
+es,False,synonym,vanilla,N/A,0.838261848887743,2204
+es,False,expansion_noimpact,vanilla,N/A,0.8529049799035552,2204
+es,False,omission,vanilla,N/A,0.7738781171118865,2196
+es,False,alteration,vanilla,N/A,0.7376125246514462,2201
+es,False,synonym,atomic,N/A,0.8953892607379011,1494
+es,False,expansion_noimpact,atomic,N/A,0.9086877353112123,1491
+es,False,omission,atomic,N/A,0.8313629750312375,1490
+es,False,alteration,atomic,N/A,0.7667754499630128,1477
+fr,False,synonym,vanilla,N/A,0.8324701471712492,2203
+fr,False,expansion_noimpact,vanilla,N/A,0.846177153527534,2205
+fr,False,omission,vanilla,N/A,0.7661768165639566,2197
+fr,False,alteration,vanilla,N/A,0.7175442879017895,2185
+fr,False,synonym,atomic,N/A,0.8934096806784743,1496
+fr,False,expansion_noimpact,atomic,N/A,0.9049777026448526,1493
+fr,False,omission,atomic,N/A,0.8232516190625467,1488
+fr,False,alteration,atomic,N/A,0.7516996539643003,1475
