@@ -1,11 +1,9 @@
-"""
-Utility script to display and compare within-between results.
-"""
+"""Utility script to display and compare silhouette-score results."""
 
 import json
 import argparse
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 
 def load_results(filepath: Path) -> Dict:
@@ -22,26 +20,43 @@ def display_results(results: Dict):
     
     print(f"\nCritical Perturbations: {', '.join(results['critical_perturbations'])}")
     print(f"Minimal Perturbations: {', '.join(results['minimal_perturbations'])}")
-    
+
+    def _print_metric(name, scores):
+        sil = scores.get('silhouette_score')
+        n = scores.get('n_samples', '')
+        sil_str = f"{sil:.6f}" if sil is not None else 'N/A'
+        print(f"  {name.upper():<12} {sil_str:>12} {n:>8}")
+
+    # --- Pipeline-dependent AskQE metrics ---
     for pipeline_result in results['results']:
         pipeline_name = pipeline_result['pipeline']
         anscheck_type = pipeline_result.get('anscheck_type')
-        
+
         if anscheck_type:
             pipeline_name = f"{pipeline_name} ({anscheck_type})"
-        
-        print(f"\n{'-'*80}")
-        print(f"Pipeline: {pipeline_name}")
-        print('-'*80)
-        
-        # Print header
-        print(f"\n{'Metric':<10} | {'SILHOUETTE':<22}")
-        print('-' * 80)
-        
-        for metric, scores in pipeline_result['metrics'].items():
-            silhouette = scores["silhouette_score"]
 
-            print(f"{metric.upper():<10} | {silhouette:>14.6f}")
+        print(f"\n{'-'*60}")
+        print(f"Pipeline: {pipeline_name}  (AskQE metrics)")
+        print('-'*60)
+
+        print(f"\n  {'Metric':<12} {'Silhouette':>12} {'N':>8}")
+        print(f"  {'-'*34}")
+
+        for m, scores in pipeline_result['metrics'].items():
+            _print_metric(m, scores)
+
+    # --- Pipeline-independent MT metrics ---
+    mt_results = results.get('mt_results', {})
+    if mt_results:
+        print(f"\n{'-'*60}")
+        print(f"Standard MT metrics (pipeline-independent)")
+        print('-'*60)
+
+        print(f"\n  {'Metric':<12} {'Silhouette':>12} {'N':>8}")
+        print(f"  {'-'*34}")
+
+        for m, scores in mt_results.items():
+            _print_metric(m, scores)
 
 
 def compare_pipelines(results: Dict):
@@ -58,19 +73,31 @@ def compare_pipelines(results: Dict):
             name += f" ({r['anscheck_type']})"
         pipelines.append(name)
     
-    # For each metric, compare across pipelines
+    # Compare AskQE metrics across pipelines
     if results['results']:
         metrics = list(results['results'][0]['metrics'].keys())
-        
+
         for metric in metrics:
-            print(f"\n{metric.upper()} - Silhouette:")
-            print('-' * 60)
-            
+            print(f"\n{metric.upper()} (AskQE):")
+            print('-' * 55)
+
             for idx, pipeline_result in enumerate(results['results']):
-                scores = pipeline_result['metrics'][metric]
-                silhouette = scores['silhouette_score']
-                
-                print(f"  {pipelines[idx]:<30} | Ratio: {silhouette:>10.4f}")
+                scores = pipeline_result['metrics'].get(metric, {})
+                sil = scores.get('silhouette_score')
+                n = scores.get('n_samples', '')
+                sil_str = f"{sil:.6f}" if sil is not None else 'N/A'
+                print(f"  {pipelines[idx]:<30} {sil_str:>12}  (n={n})")
+
+    # Show MT metrics (same for all pipelines)
+    mt_results = results.get('mt_results', {})
+    if mt_results:
+        print(f"\nStandard MT metrics (pipeline-independent):")
+        print('-' * 55)
+        for metric, scores in mt_results.items():
+            sil = scores.get('silhouette_score')
+            n = scores.get('n_samples', '')
+            sil_str = f"{sil:.6f}" if sil is not None else 'N/A'
+            print(f"  {metric.upper():<30} {sil_str:>12}  (n={n})")
 
 
 def main():
@@ -90,7 +117,7 @@ def main():
     
     args = parser.parse_args()
     
-    # Get workspace root (2 levels up from this script in evaluation/within-between/)
+    # Get workspace root (2 levels up from this script in evaluation/silhouette/)
     script_dir = Path(__file__).resolve().parent
     workspace_root = script_dir.parent.parent
     
