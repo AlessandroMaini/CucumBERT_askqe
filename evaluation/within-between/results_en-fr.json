@@ -1,0 +1,85 @@
+{
+  "target_lang": "en-fr",
+  "critical_perturbations": [
+    "omission",
+    "alteration"
+  ],
+  "minimal_perturbations": [
+    "synonym",
+    "expansion_noimpact"
+  ],
+  "results": [
+    {
+      "pipeline": "vanilla",
+      "anscheck_type": null,
+      "metrics": {
+        "sbert": {
+          "avg_diff_between": 0.040589685469560315,
+          "diff_between_count": 1932,
+          "avg_diff_within": 0.030483602621977864,
+          "diff_within_count": 979
+        },
+        "f1": {
+          "avg_diff_between": 0.0690574566456379,
+          "diff_between_count": 1932,
+          "avg_diff_within": 0.051547102241081506,
+          "diff_within_count": 979
+        },
+        "em": {
+          "avg_diff_between": 0.08184326629202411,
+          "diff_between_count": 1932,
+          "avg_diff_within": 0.06582740993722788,
+          "diff_within_count": 979
+        },
+        "chrf": {
+          "avg_diff_between": 581.6569276475406,
+          "diff_between_count": 1932,
+          "avg_diff_within": 424.7328356421959,
+          "diff_within_count": 979
+        },
+        "bleu": {
+          "avg_diff_between": 684.7547083683535,
+          "diff_between_count": 1932,
+          "avg_diff_within": 514.7672300168033,
+          "diff_within_count": 979
+        }
+      }
+    },
+    {
+      "pipeline": "anscheck",
+      "anscheck_type": "longformer",
+      "metrics": {
+        "sbert": {
+          "avg_diff_between": 0.0436156609433149,
+          "diff_between_count": 1844,
+          "avg_diff_within": 0.03732935776135976,
+          "diff_within_count": 934
+        },
+        "f1": {
+          "avg_diff_between": 0.07250813100160983,
+          "diff_between_count": 1844,
+          "avg_diff_within": 0.056873138737178655,
+          "diff_within_count": 934
+        },
+        "em": {
+          "avg_diff_between": 0.08338436603853418,
+          "diff_between_count": 1844,
+          "avg_diff_within": 0.07093850905815564,
+          "diff_within_count": 934
+        },
+        "chrf": {
+          "avg_diff_between": 615.5452611948232,
+          "diff_between_count": 1844,
+          "avg_diff_within": 471.3889120212873,
+          "diff_within_count": 934
+        },
+        "bleu": {
+          "avg_diff_between": 730.9089873109486,
+          "diff_between_count": 1844,
+          "avg_diff_within": 583.9548933862161,
+          "diff_within_count": 934
+        }
+      }
+    }
+  ]
+}
