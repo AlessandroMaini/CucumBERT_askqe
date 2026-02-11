@@ -46,8 +46,26 @@ Semantic roles: {{semantic_roles}}
 Questions: """
 
 
+factcoverage = """Task: You will be given an English sentence and a list of atomic facts, which are short sentences conveying one piece of information. Your goal is to generate exactly ONE question for EACH atomic fact, in the same order. The number of questions MUST equal the number of atomic facts. Output the list of questions in Python list format without giving any additional explanation. Do not output as code format (```python```).
+
+*** Example Starts ***
+Sentence: It is not yet known whether the severity or level of control of underlying health conditions affects the risk for severe disease associated with COVID-19.
+Atomic facts: ['It is not yet known whether the severity of underlying health conditions affects the risk for severe disease associated with COVID-19.', 'It is not yet known whether the level of control of underlying health conditions affects the risk for severe disease associated with COVID-19.']
+Questions: ["Is it known whether the severity of underlying health conditions affects the risk for severe disease associated with COVID-19?", "Is it known whether the level of control of underlying health conditions affects the risk for severe disease associated with COVID-19?"]
+
+Sentence: The number of accessory proteins and their function is unique depending on the specific coronavirus.
+Atomic facts: ['The number of accessory proteins is unique depending on the specific coronavirus.', 'The function of accessory proteins is unique depending on the specific coronavirus.']
+Questions: ["What is unique about the number of accessory proteins depending on the specific coronavirus?", "What is unique about the function of accessory proteins depending on the specific coronavirus?"]
+*** Example Ends ***
+
+Sentence: {{sentence}}
+Atomic facts: {{atomic_facts}}
+Questions: """
+
+
 prompts = {
     "vanilla": vanilla,
     "atomic": nli,
-    "semantic": srl
+    "semantic": srl,
+    "factcoverage": factcoverage
 }
