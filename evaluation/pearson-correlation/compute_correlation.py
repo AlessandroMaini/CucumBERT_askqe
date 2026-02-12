@@ -27,6 +27,7 @@ DATASETS = ["en-es", "en-fr"]
 PIPELINES_ASKQE = [
     {"name": "vanilla"},
     {"name": "atomic"},
+    {"name": "factcoverage"},
     # {"name": "anscheck", "anscheck_type": "longformer"},
     # {"name": "anscheck", "anscheck_type": "electra"},
 ]

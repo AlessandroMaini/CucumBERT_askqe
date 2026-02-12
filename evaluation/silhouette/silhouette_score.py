@@ -343,12 +343,11 @@ def main():
     if result:
         all_results.append(result)
 
-    # Process anscheck pipelines
-    for anscheck_type in ['longformer', 'electra']:
-        result = process_pipeline(eval_dir, args.target_lang, 'anscheck',
-                                  anscheck_type, do_plot=args.plot)
-        if result:
-            all_results.append(result)
+    # Process factcoverage pipeline
+    result = process_pipeline(eval_dir, args.target_lang, 'factcoverage',
+                              do_plot=args.plot)
+    if result:
+        all_results.append(result)
 
     # --- Compute MT metrics once (pipeline-independent) ---
     print(f"\nComputing pipeline-independent MT metrics...")

@@ -25,6 +25,7 @@ STANDARD_LABELS = {
 PIPELINE_LABELS = {
     "vanilla": "Vanilla",
     "atomic": "Atomic",
+    "factcoverage": "FactCoverage",
     "anscheck-longformer": "AnsCheck-LF",
     "anscheck-electra": "AnsCheck-EL",
 }
