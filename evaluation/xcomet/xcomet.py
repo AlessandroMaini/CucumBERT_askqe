@@ -39,12 +39,12 @@ def main():
             lang_label = f"{language}{'-mini' if is_mini else ''}"
             print(f"Processing - Language: {lang_label}, Perturbation: {perturbation}")
 
-            # Build file path - only need the perturbed_DGT file
+            # Build file path - only need the contratico file
             if is_mini:
-                input_file = workspace_root / "perturbed_DGT" / f"en-{language}-mini" / f"{perturbation}.jsonl"
+                input_file = workspace_root / "contratico" / f"en-{language}-mini" / f"{perturbation}.jsonl"
                 output_dir = script_dir / f"en-{language}-mini"
             else:
-                input_file = workspace_root / "perturbed_DGT" / f"en-{language}" / f"{perturbation}.jsonl"
+                input_file = workspace_root / "contratico" / f"en-{language}" / f"{perturbation}.jsonl"
                 output_dir = script_dir / f"en-{language}"
             
             output_file = output_dir / f"{perturbation}.jsonl"

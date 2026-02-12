@@ -74,17 +74,6 @@ for language, is_mini in language_configs:
                 # Build dataset name
                 dataset_name = f"en-{language}{'-mini' if is_mini else ''}"
                 
-                # Structure: sbert/{dataset}/{pipeline}/[anscheck-type if applicable-]{perturbation}.jsonl
-                if pipeline == "anscheck" and check_variant:
-                    output_jsonl_dir = script_dir / dataset_name / pipeline
-                    output_jsonl_filename = f"{check_variant}-{perturbation}.jsonl"
-                else:
-                    output_jsonl_dir = script_dir / dataset_name / pipeline
-                    output_jsonl_filename = f"{perturbation}.jsonl"
-                
-                output_jsonl_dir.mkdir(parents=True, exist_ok=True)
-                output_jsonl_path = output_jsonl_dir / output_jsonl_filename
-
                 # Build file paths
                 if pipeline == "anscheck" and check_variant:
                     if is_mini:
@@ -106,16 +95,29 @@ for language, is_mini in language_configs:
 
                 total_cosine_similarity = 0
                 num_comparisons = 0
+                results_list = []
 
                 try:
-                    with open(predicted_file, "r", encoding="utf-8") as pred_file, \
-                         open(reference_file, "r", encoding="utf-8") as ref_file, \
-                         open(output_jsonl_path, "w", encoding="utf-8") as jsonl_out:
-                        
-                        for pred_line, ref_line in zip(pred_file, ref_file):
+                    # Load reference file into a dict keyed by ID
+                    ref_by_id = {}
+                    with open(reference_file, "r", encoding="utf-8") as ref_file:
+                        for ref_line in ref_file:
+                            try:
+                                ref_data = json.loads(ref_line)
+                                ref_id = ref_data.get("id")
+                                if ref_id is not None:
+                                    ref_by_id[ref_id] = ref_data
+                            except json.JSONDecodeError:
+                                continue
+
+                    with open(predicted_file, "r", encoding="utf-8") as pred_file:
+                        for pred_line in pred_file:
                             try:
                                 pred_data = json.loads(pred_line)
-                                ref_data = json.loads(ref_line)
+                                pred_id = pred_data.get("id")
+                                if pred_id is None or pred_id not in ref_by_id:
+                                    continue
+                                ref_data = ref_by_id[pred_id]
 
                                 predicted_answers = pred_data.get("answers", [])
                                 reference_answers = ref_data.get("answers", [])
@@ -164,13 +166,12 @@ for language, is_mini in language_configs:
                                     total_cosine_similarity += cos_sim
                                     num_comparisons += 1
                                 
-                                # Write record with scores to JSONL
+                                # Collect record with scores
                                 if cosine_similarities:
                                     output_record = pred_data.copy()
                                     output_record["sbert_scores"] = cosine_similarities
                                     output_record["sbert_score"] = sum(cosine_similarities) / len(cosine_similarities)
-                                    jsonl_out.write(json.dumps(output_record, ensure_ascii=False) + "\n")
-                                    jsonl_out.flush()
+                                    results_list.append(output_record)
 
                             except json.JSONDecodeError as e:
                                 print(f"Skipping a corrupted line due to JSONDecodeError: {e}")
@@ -179,9 +180,25 @@ for language, is_mini in language_configs:
                 except FileNotFoundError as e:
                     print(f"File not found: {e}")
                     continue
-
-                if num_comparisons > 0:
+                
+                # Structure: sbert/{dataset}/{pipeline}/[anscheck-type if applicable-]{perturbation}.jsonl
+                if num_comparisons > 0 and results_list:
                     avg_cosine_similarity = total_cosine_similarity / num_comparisons
+
+                    # Build output JSONL path and write only if we have results
+                    if pipeline == "anscheck" and check_variant:
+                        output_jsonl_dir = script_dir / dataset_name / pipeline
+                        output_jsonl_filename = f"{check_variant}-{perturbation}.jsonl"
+                    else:
+                        output_jsonl_dir = script_dir / dataset_name / pipeline
+                        output_jsonl_filename = f"{perturbation}.jsonl"
+                    
+                    output_jsonl_dir.mkdir(parents=True, exist_ok=True)
+                    output_jsonl_path = output_jsonl_dir / output_jsonl_filename
+
+                    with open(output_jsonl_path, "w", encoding="utf-8") as jsonl_out:
+                        for record in results_list:
+                            jsonl_out.write(json.dumps(record, ensure_ascii=False) + "\n")
 
                     print("-" * 80)
                     print("Average Scores:")
