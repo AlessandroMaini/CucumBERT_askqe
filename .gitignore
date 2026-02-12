@@ -16,3 +16,6 @@ contratico/check_order.py
 evaluation/pearson-correlation/extract_results.py
 QA/filter_answers.py
 QA/validate_qa_counts.py
+evaluation/pearson-correlation/perturbation_correlation_results.json
+evaluation/pearson-correlation/perturbation_correlation.py
+evaluation/pearson-correlation/plot_correlation.py
