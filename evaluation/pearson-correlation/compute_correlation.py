@@ -11,7 +11,7 @@ PERTURBATIONS = ["synonym", "alteration", "omission", "expansion_noimpact"]
 DATASETS = ["en-es", "en-es-mini", "en-fr", "en-fr-mini"]
 
 # Define pipelines
-PIPELINES = ["vanilla", "atomic", "anscheck"]
+PIPELINES = ["vanilla", "atomic", "anscheck","factcoverage"]
 
 # Define anscheck types
 ANSCHECK_TYPES = ["longformer", "electra"]
@@ -49,7 +49,7 @@ ASKQE_METRICS = {
     },
     "sbert": {
         "base_path": "evaluation/sbert",
-        "field_extractor": lambda data: data.get("sbert_score")
+        "field_extractor": lambda data: data.get("sbert_score") if data.get("sbert_score") is not None else data.get("sbert") 
     }
 }
 
