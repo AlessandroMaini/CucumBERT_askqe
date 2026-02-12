@@ -34,6 +34,18 @@
       "omission": 0.67328,
       "expansion_noimpact": 0.789913
     },
+    "f1-anscheck-longformer": {
+      "synonym": 0.668996,
+      "alteration": 0.524943,
+      "omission": 0.595964,
+      "expansion_noimpact": 0.676064
+    },
+    "f1-anscheck-electra": {
+      "synonym": 0.682992,
+      "alteration": 0.551893,
+      "omission": 0.593269,
+      "expansion_noimpact": 0.688754
+    },
     "em-vanilla": {
       "synonym": 0.32233,
       "alteration": 0.212635,
@@ -45,6 +57,18 @@
       "alteration": 0.240316,
       "omission": 0.45378,
       "expansion_noimpact": 0.555465
+    },
+    "em-anscheck-longformer": {
+      "synonym": 0.308659,
+      "alteration": 0.186184,
+      "omission": 0.23845,
+      "expansion_noimpact": 0.266669
+    },
+    "em-anscheck-electra": {
+      "synonym": 0.328976,
+      "alteration": 0.215284,
+      "omission": 0.233486,
+      "expansion_noimpact": 0.286612
     },
     "bleu-vanilla": {
       "synonym": 51.896222,
@@ -58,6 +82,18 @@
       "omission": 56.47224,
       "expansion_noimpact": 68.047587
     },
+    "bleu-anscheck-longformer": {
+      "synonym": 51.17346,
+      "alteration": 36.578028,
+      "omission": 42.08381,
+      "expansion_noimpact": 48.925007
+    },
+    "bleu-anscheck-electra": {
+      "synonym": 53.362419,
+      "alteration": 39.726356,
+      "omission": 42.301292,
+      "expansion_noimpact": 50.613875
+    },
     "chrf-vanilla": {
       "synonym": 69.02249,
       "alteration": 56.88484,
@@ -70,6 +106,18 @@
       "omission": 69.109798,
       "expansion_noimpact": 81.903724
     },
+    "chrf-anscheck-longformer": {
+      "synonym": 69.319998,
+      "alteration": 57.009384,
+      "omission": 60.722736,
+      "expansion_noimpact": 71.485497
+    },
+    "chrf-anscheck-electra": {
+      "synonym": 71.041686,
+      "alteration": 59.579203,
+      "omission": 60.280935,
+      "expansion_noimpact": 73.134313
+    },
     "sbert-vanilla": {
       "synonym": 0.830373,
       "alteration": 0.725316,
@@ -81,6 +129,18 @@
       "alteration": 0.756863,
       "omission": 0.826238,
       "expansion_noimpact": 0.905376
+    },
+    "sbert-anscheck-longformer": {
+      "synonym": 0.835949,
+      "alteration": 0.729103,
+      "omission": 0.777755,
+      "expansion_noimpact": 0.850135
+    },
+    "sbert-anscheck-electra": {
+      "synonym": 0.849322,
+      "alteration": 0.751617,
+      "omission": 0.774496,
+      "expansion_noimpact": 0.86389
     }
   },
   "correlations": [
@@ -113,6 +173,34 @@
       "p_value": 2.6343864173990547e-52
     },
     {
+      "askqe_metric": "f1-anscheck-longformer",
+      "standard_metric": "xcomet",
+      "n_instances": 1881,
+      "pearson_r": 0.329937,
+      "p_value": 5.242966321655174e-49
+    },
+    {
+      "askqe_metric": "f1-anscheck-longformer",
+      "standard_metric": "bt_score",
+      "n_instances": 1881,
+      "pearson_r": 0.40265,
+      "p_value": 3.0517721889851123e-74
+    },
+    {
+      "askqe_metric": "f1-anscheck-electra",
+      "standard_metric": "xcomet",
+      "n_instances": 1862,
+      "pearson_r": 0.331246,
+      "p_value": 6.354670058259247e-49
+    },
+    {
+      "askqe_metric": "f1-anscheck-electra",
+      "standard_metric": "bt_score",
+      "n_instances": 1862,
+      "pearson_r": 0.403536,
+      "p_value": 7.433470912825854e-74
+    },
+    {
       "askqe_metric": "em-vanilla",
       "standard_metric": "xcomet",
       "n_instances": 1972,
@@ -139,6 +227,34 @@
       "n_instances": 1924,
       "pearson_r": 0.213169,
       "p_value": 3.2899760103337247e-21
+    },
+    {
+      "askqe_metric": "em-anscheck-longformer",
+      "standard_metric": "xcomet",
+      "n_instances": 1881,
+      "pearson_r": 0.167836,
+      "p_value": 2.3658528546095315e-13
+    },
+    {
+      "askqe_metric": "em-anscheck-longformer",
+      "standard_metric": "bt_score",
+      "n_instances": 1881,
+      "pearson_r": 0.220704,
+      "p_value": 3.4805031877571643e-22
+    },
+    {
+      "askqe_metric": "em-anscheck-electra",
+      "standard_metric": "xcomet",
+      "n_instances": 1862,
+      "pearson_r": 0.161129,
+      "p_value": 2.67287253757407e-12
+    },
+    {
+      "askqe_metric": "em-anscheck-electra",
+      "standard_metric": "bt_score",
+      "n_instances": 1862,
+      "pearson_r": 0.214278,
+      "p_value": 8.859097873815803e-21
     },
     {
       "askqe_metric": "bleu-vanilla",
@@ -169,6 +285,34 @@
       "p_value": 8.384166129268721e-39
     },
     {
+      "askqe_metric": "bleu-anscheck-longformer",
+      "standard_metric": "xcomet",
+      "n_instances": 1881,
+      "pearson_r": 0.278752,
+      "p_value": 6.504012659493528e-35
+    },
+    {
+      "askqe_metric": "bleu-anscheck-longformer",
+      "standard_metric": "bt_score",
+      "n_instances": 1881,
+      "pearson_r": 0.34552,
+      "p_value": 7.108240952761468e-54
+    },
+    {
+      "askqe_metric": "bleu-anscheck-electra",
+      "standard_metric": "xcomet",
+      "n_instances": 1862,
+      "pearson_r": 0.262156,
+      "p_value": 1.2238303008098917e-30
+    },
+    {
+      "askqe_metric": "bleu-anscheck-electra",
+      "standard_metric": "bt_score",
+      "n_instances": 1862,
+      "pearson_r": 0.338577,
+      "p_value": 3.628501504658253e-51
+    },
+    {
       "askqe_metric": "chrf-vanilla",
       "standard_metric": "xcomet",
       "n_instances": 1972,
@@ -197,6 +341,34 @@
       "p_value": 2.152351628486001e-50
     },
     {
+      "askqe_metric": "chrf-anscheck-longformer",
+      "standard_metric": "xcomet",
+      "n_instances": 1881,
+      "pearson_r": 0.329203,
+      "p_value": 8.750658561060672e-49
+    },
+    {
+      "askqe_metric": "chrf-anscheck-longformer",
+      "standard_metric": "bt_score",
+      "n_instances": 1881,
+      "pearson_r": 0.417222,
+      "p_value": 4.069797727078533e-80
+    },
+    {
+      "askqe_metric": "chrf-anscheck-electra",
+      "standard_metric": "xcomet",
+      "n_instances": 1862,
+      "pearson_r": 0.327763,
+      "p_value": 7.039884603854699e-48
+    },
+    {
+      "askqe_metric": "chrf-anscheck-electra",
+      "standard_metric": "bt_score",
+      "n_instances": 1862,
+      "pearson_r": 0.405498,
+      "p_value": 1.2665532537911285e-74
+    },
+    {
       "askqe_metric": "sbert-vanilla",
       "standard_metric": "xcomet",
       "n_instances": 1972,
@@ -223,6 +395,34 @@
       "n_instances": 1924,
       "pearson_r": 0.290981,
       "p_value": 7.41165486976809e-39
+    },
+    {
+      "askqe_metric": "sbert-anscheck-longformer",
+      "standard_metric": "xcomet",
+      "n_instances": 1881,
+      "pearson_r": 0.352483,
+      "p_value": 3.846942364353367e-56
+    },
+    {
+      "askqe_metric": "sbert-anscheck-longformer",
+      "standard_metric": "bt_score",
+      "n_instances": 1881,
+      "pearson_r": 0.368368,
+      "p_value": 1.569707425756523e-61
+    },
+    {
+      "askqe_metric": "sbert-anscheck-electra",
+      "standard_metric": "xcomet",
+      "n_instances": 1862,
+      "pearson_r": 0.383105,
+      "p_value": 3.750188772846732e-66
+    },
+    {
+      "askqe_metric": "sbert-anscheck-electra",
+      "standard_metric": "bt_score",
+      "n_instances": 1862,
+      "pearson_r": 0.400042,
+      "p_value": 1.6879602484278292e-72
     }
   ]
 }

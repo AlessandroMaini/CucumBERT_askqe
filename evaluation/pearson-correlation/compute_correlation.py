@@ -27,8 +27,8 @@ DATASETS = ["en-es", "en-fr"]
 PIPELINES_ASKQE = [
     {"name": "vanilla"},
     {"name": "atomic"},
-    # {"name": "anscheck", "anscheck_type": "longformer"},
-    # {"name": "anscheck", "anscheck_type": "electra"},
+    {"name": "anscheck", "anscheck_type": "longformer"},
+    {"name": "anscheck", "anscheck_type": "electra"},
 ]
 
 STANDARD_METRICS = {
