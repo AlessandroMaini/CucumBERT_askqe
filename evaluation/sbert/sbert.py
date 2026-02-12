@@ -33,7 +33,7 @@ language_configs = [
     ("fr", True),   # mini version
 ]
 
-pipelines = ["vanilla", "atomic", "anscheck"]
+pipelines = ["vanilla", "atomic", "factcoverage"]
 perturbations = ["synonym", "expansion_noimpact",
                  "omission", "alteration"]
 check_variants = ["longformer", "electra"]
