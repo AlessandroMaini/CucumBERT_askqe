@@ -1,0 +1,228 @@
+{
+  "dataset": "en-es",
+  "perturbation_types": [
+    "synonym",
+    "alteration",
+    "omission",
+    "expansion_noimpact"
+  ],
+  "description": "Instance-based Pearson correlations between AskQE and standard MT QE metrics. Correlations are computed over individual sentences across all perturbation types. Per-perturbation averages are included for reference.",
+  "standard_metric_averages": {
+    "xcomet": {
+      "synonym": 0.866503,
+      "alteration": 0.754894,
+      "omission": 0.78401,
+      "expansion_noimpact": 0.851293
+    },
+    "bt_score": {
+      "synonym": 0.901872,
+      "alteration": 0.870392,
+      "omission": 0.870673,
+      "expansion_noimpact": 0.897829
+    }
+  },
+  "askqe_metric_averages": {
+    "f1-vanilla": {
+      "synonym": 0.661328,
+      "alteration": 0.573175,
+      "omission": 0.604835,
+      "expansion_noimpact": 0.678474
+    },
+    "f1-atomic": {
+      "synonym": 0.712836,
+      "alteration": 0.535772,
+      "omission": 0.62932,
+      "expansion_noimpact": 0.695854
+    },
+    "em-vanilla": {
+      "synonym": 0.309579,
+      "alteration": 0.268864,
+      "omission": 0.259234,
+      "expansion_noimpact": 0.285216
+    },
+    "em-atomic": {
+      "synonym": 0.321732,
+      "alteration": 0.209084,
+      "omission": 0.267012,
+      "expansion_noimpact": 0.289335
+    },
+    "bleu-vanilla": {
+      "synonym": 50.057557,
+      "alteration": 42.78121,
+      "omission": 44.458637,
+      "expansion_noimpact": 49.099789
+    },
+    "bleu-atomic": {
+      "synonym": 53.365109,
+      "alteration": 38.449915,
+      "omission": 45.410419,
+      "expansion_noimpact": 49.491181
+    },
+    "chrf-vanilla": {
+      "synonym": 67.337323,
+      "alteration": 60.106378,
+      "omission": 62.068923,
+      "expansion_noimpact": 69.926752
+    },
+    "chrf-atomic": {
+      "synonym": 70.55612,
+      "alteration": 54.907954,
+      "omission": 64.124901,
+      "expansion_noimpact": 69.630039
+    },
+    "sbert-vanilla": {
+      "synonym": 0.793255,
+      "alteration": 0.732413,
+      "omission": 0.757321,
+      "expansion_noimpact": 0.814634
+    },
+    "sbert-atomic": {
+      "synonym": 0.813958,
+      "alteration": 0.732184,
+      "omission": 0.764962,
+      "expansion_noimpact": 0.806901
+    }
+  },
+  "correlations": [
+    {
+      "askqe_metric": "f1-vanilla",
+      "standard_metric": "xcomet",
+      "n_instances": 1968,
+      "pearson_r": 0.252532,
+      "p_value": 5.219604940743042e-30
+    },
+    {
+      "askqe_metric": "f1-vanilla",
+      "standard_metric": "bt_score",
+      "n_instances": 1968,
+      "pearson_r": 0.411185,
+      "p_value": 3.7173527014013367e-81
+    },
+    {
+      "askqe_metric": "f1-atomic",
+      "standard_metric": "xcomet",
+      "n_instances": 1910,
+      "pearson_r": 0.240352,
+      "p_value": 1.671744641927482e-26
+    },
+    {
+      "askqe_metric": "f1-atomic",
+      "standard_metric": "bt_score",
+      "n_instances": 1910,
+      "pearson_r": 0.244667,
+      "p_value": 1.9689853722005952e-27
+    },
+    {
+      "askqe_metric": "em-vanilla",
+      "standard_metric": "xcomet",
+      "n_instances": 1968,
+      "pearson_r": 0.13434,
+      "p_value": 2.1910220598172487e-09
+    },
+    {
+      "askqe_metric": "em-vanilla",
+      "standard_metric": "bt_score",
+      "n_instances": 1968,
+      "pearson_r": 0.29977,
+      "p_value": 3.7878863680613233e-42
+    },
+    {
+      "askqe_metric": "em-atomic",
+      "standard_metric": "xcomet",
+      "n_instances": 1910,
+      "pearson_r": 0.114929,
+      "p_value": 4.747940057181917e-07
+    },
+    {
+      "askqe_metric": "em-atomic",
+      "standard_metric": "bt_score",
+      "n_instances": 1910,
+      "pearson_r": 0.181924,
+      "p_value": 1.1241432963728126e-15
+    },
+    {
+      "askqe_metric": "bleu-vanilla",
+      "standard_metric": "xcomet",
+      "n_instances": 1968,
+      "pearson_r": 0.204447,
+      "p_value": 5.147510157285472e-20
+    },
+    {
+      "askqe_metric": "bleu-vanilla",
+      "standard_metric": "bt_score",
+      "n_instances": 1968,
+      "pearson_r": 0.391744,
+      "p_value": 3.4402980427326355e-73
+    },
+    {
+      "askqe_metric": "bleu-atomic",
+      "standard_metric": "xcomet",
+      "n_instances": 1910,
+      "pearson_r": 0.181414,
+      "p_value": 1.3535947197323226e-15
+    },
+    {
+      "askqe_metric": "bleu-atomic",
+      "standard_metric": "bt_score",
+      "n_instances": 1910,
+      "pearson_r": 0.244735,
+      "p_value": 1.903351307963942e-27
+    },
+    {
+      "askqe_metric": "chrf-vanilla",
+      "standard_metric": "xcomet",
+      "n_instances": 1968,
+      "pearson_r": 0.253492,
+      "p_value": 3.1219067733265275e-30
+    },
+    {
+      "askqe_metric": "chrf-vanilla",
+      "standard_metric": "bt_score",
+      "n_instances": 1968,
+      "pearson_r": 0.394051,
+      "p_value": 4.158160511890016e-74
+    },
+    {
+      "askqe_metric": "chrf-atomic",
+      "standard_metric": "xcomet",
+      "n_instances": 1910,
+      "pearson_r": 0.219028,
+      "p_value": 3.5314987583332454e-22
+    },
+    {
+      "askqe_metric": "chrf-atomic",
+      "standard_metric": "bt_score",
+      "n_instances": 1910,
+      "pearson_r": 0.228221,
+      "p_value": 5.460923512393484e-24
+    },
+    {
+      "askqe_metric": "sbert-vanilla",
+      "standard_metric": "xcomet",
+      "n_instances": 1968,
+      "pearson_r": 0.230376,
+      "p_value": 4.05481726037064e-25
+    },
+    {
+      "askqe_metric": "sbert-vanilla",
+      "standard_metric": "bt_score",
+      "n_instances": 1968,
+      "pearson_r": 0.373173,
+      "p_value": 4.589616905927514e-66
+    },
+    {
+      "askqe_metric": "sbert-atomic",
+      "standard_metric": "xcomet",
+      "n_instances": 1910,
+      "pearson_r": 0.185308,
+      "p_value": 3.237363697732307e-16
+    },
+    {
+      "askqe_metric": "sbert-atomic",
+      "standard_metric": "bt_score",
+      "n_instances": 1910,
+      "pearson_r": 0.229064,
+      "p_value": 3.6912364878695744e-24
+    }
+  ]
+}
