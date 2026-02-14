@@ -35,7 +35,7 @@
       "anscheck_type": null,
       "metrics": {
         "sbert": {
-          "silhouette_score": 0.06405614228582476,
+          "silhouette_score": 0.06405614553989702,
           "n_samples": 1972
         },
         "f1": {
@@ -61,7 +61,7 @@
       "anscheck_type": null,
       "metrics": {
         "sbert": {
-          "silhouette_score": 0.10103410356558454,
+          "silhouette_score": 0.10103410029793042,
           "n_samples": 1924
         },
         "f1": {
@@ -87,24 +87,24 @@
       "anscheck_type": null,
       "metrics": {
         "sbert": {
-          "silhouette_score": null,
-          "n_samples": 0
+          "silhouette_score": 0.1398534308080366,
+          "n_samples": 1921
         },
         "f1": {
-          "silhouette_score": 0.17386290655948736,
-          "n_samples": 2000
+          "silhouette_score": 0.17292774493514454,
+          "n_samples": 1921
         },
         "em": {
-          "silhouette_score": 0.13022566754195652,
-          "n_samples": 2000
+          "silhouette_score": 0.12982676164416018,
+          "n_samples": 1921
         },
         "chrf": {
-          "silhouette_score": null,
-          "n_samples": 0
+          "silhouette_score": 0.17666133217432473,
+          "n_samples": 1921
         },
         "bleu": {
-          "silhouette_score": null,
-          "n_samples": 0
+          "silhouette_score": 0.15062507364051134,
+          "n_samples": 1921
         }
       }
     }

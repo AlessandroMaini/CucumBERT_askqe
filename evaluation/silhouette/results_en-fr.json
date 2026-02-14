@@ -35,7 +35,7 @@
       "anscheck_type": null,
       "metrics": {
         "sbert": {
-          "silhouette_score": 0.07047673953737288,
+          "silhouette_score": 0.07047674787348736,
           "n_samples": 1970
         },
         "f1": {
@@ -61,7 +61,7 @@
       "anscheck_type": null,
       "metrics": {
         "sbert": {
-          "silhouette_score": 0.1051612762301446,
+          "silhouette_score": 0.10516127564955347,
           "n_samples": 1926
         },
         "f1": {
@@ -83,54 +83,28 @@
       }
     },
     {
-      "pipeline": "anscheck",
-      "anscheck_type": "longformer",
+      "pipeline": "factcoverage",
+      "anscheck_type": null,
       "metrics": {
         "sbert": {
-          "silhouette_score": 0.06880524627733745,
-          "n_samples": 1881
+          "silhouette_score": 0.16875171959295857,
+          "n_samples": 1920
         },
         "f1": {
-          "silhouette_score": 0.05562368284099674,
-          "n_samples": 1881
+          "silhouette_score": 0.2098308940499852,
+          "n_samples": 1920
         },
         "em": {
-          "silhouette_score": 0.025018784485700024,
-          "n_samples": 1881
+          "silhouette_score": 0.1559887770991519,
+          "n_samples": 1920
         },
         "chrf": {
-          "silhouette_score": 0.05777502377114753,
-          "n_samples": 1881
+          "silhouette_score": 0.20926703640611025,
+          "n_samples": 1920
         },
         "bleu": {
-          "silhouette_score": 0.038997468331555554,
-          "n_samples": 1881
-        }
-      }
-    },
-    {
-      "pipeline": "anscheck",
-      "anscheck_type": "electra",
-      "metrics": {
-        "sbert": {
-          "silhouette_score": 0.06603828661589115,
-          "n_samples": 1857
-        },
-        "f1": {
-          "silhouette_score": 0.051984996710071105,
-          "n_samples": 1857
-        },
-        "em": {
-          "silhouette_score": 0.02173789596990111,
-          "n_samples": 1857
-        },
-        "chrf": {
-          "silhouette_score": 0.05712103714658776,
-          "n_samples": 1857
-        },
-        "bleu": {
-          "silhouette_score": 0.035962127474779886,
-          "n_samples": 1857
+          "silhouette_score": 0.18004593829951135,
+          "n_samples": 1920
         }
       }
     }
