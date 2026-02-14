@@ -12,7 +12,7 @@ The standard ASKQE approach extracts atomic facts from text and generates questi
 
 To run the ASKQE pipeline with the Fact Coverage extension, use the provided Jupyter notebook:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AlessandroMaini/CucumBERT_askqe/blob/fact-coverage/askqe_fact_coverage_extension.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AlessandroMaini/CucumBERT_askqe/blob/fact-coverage/notebooks/askqe_fact_coverage_extension.ipynb)
 
 The notebook includes:
 - Setup and configuration for the Fact Coverage pipeline
