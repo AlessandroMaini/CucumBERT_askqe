@@ -19,7 +19,7 @@ AskQE is a question generation and answering framework designed to detect critic
 
 This repository explores three novel extensions to the original AskQE framework, each implemented in a dedicated branch:
 
-### 🔹 [Domain Adaptation](https://github.com/AlessandroMaini/CucumBERT_askqe/tree/domain-adaptation)
+### 🔹 [Domain Adaptation](https://github.com/AlessandroMaini/CucumBERT_askqe/tree/domain-adaptation-ext)
 Applies the baseline AskQE pipeline to a **Legal domain dataset** instead of the original TICO-19 COVID-19 domain dataset. This extension investigates how well the question generation and answering approach generalizes to specialized domains with distinct terminology and linguistic patterns.
 
 **Key Features:**
