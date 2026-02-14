@@ -35,7 +35,7 @@
       "anscheck_type": null,
       "metrics": {
         "sbert": {
-          "silhouette_score": 0.07047674787348736,
+          "silhouette_score": 0.07047674786818305,
           "n_samples": 1970
         },
         "f1": {
@@ -61,7 +61,7 @@
       "anscheck_type": null,
       "metrics": {
         "sbert": {
-          "silhouette_score": 0.10516127564955347,
+          "silhouette_score": 0.10516127572373507,
           "n_samples": 1926
         },
         "f1": {
